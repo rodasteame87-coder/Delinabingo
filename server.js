@@ -1,4 +1,5 @@
 const express = require("express");
+require("./bot");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
