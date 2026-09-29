@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -27,23 +28,29 @@ body {
 }
 
 h1 {
-    margin: 5px 0 18px;
+    margin: 5px 0 6px;
     font-size: 29px;
 }
 
+.subtitle {
+    color: #9da7b7;
+    margin-bottom: 16px;
+}
+
 .status {
-    max-width: 430px;
+    max-width: 450px;
     margin: 0 auto 15px;
-    padding: 12px;
+    padding: 13px;
     border-radius: 12px;
     background: #1d2633;
     font-weight: bold;
 }
 
 .letters,
-.card {
+.card,
+.called-box {
     width: 100%;
-    max-width: 430px;
+    max-width: 450px;
     margin-left: auto;
     margin-right: auto;
 }
@@ -57,7 +64,7 @@ h1 {
 
 .letter {
     background: #293446;
-    padding: 11px 5px;
+    padding: 10px 5px;
     border-radius: 9px;
     font-size: 21px;
     font-weight: bold;
@@ -78,6 +85,11 @@ h1 {
     border-radius: 10px;
     font-size: 18px;
     font-weight: bold;
+    cursor: pointer;
+}
+
+.cell:active {
+    transform: scale(0.95);
 }
 
 .free {
@@ -88,40 +100,67 @@ h1 {
     background: #20a463;
 }
 
+.called-cell {
+    border: 2px solid #f0b429;
+}
+
 .last {
-    max-width: 430px;
-    margin: 20px auto 0;
+    max-width: 450px;
+    margin: 18px auto 0;
     background: #1d2633;
     padding: 14px;
     border-radius: 14px;
 }
 
 .last-title {
-    font-size: 15px;
+    font-size: 14px;
     color: #b9c0cc;
 }
 
 #lastNumber {
-    font-size: 42px;
+    font-size: 40px;
     font-weight: bold;
     margin-top: 4px;
 }
 
-.live {
-    margin-top: 14px;
-    font-size: 18px;
+.called-box {
+    margin-top: 15px;
+    padding: 15px;
+    background: #1d2633;
+    border-radius: 14px;
+    text-align: left;
+}
+
+.called-title {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.called-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+}
+
+.called-number {
+    background: #293446;
+    padding: 7px 10px;
+    border-radius: 8px;
     font-weight: bold;
 }
 
-#message {
+.live {
     margin-top: 15px;
-    color: #b9c0cc;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .bingo-button {
     margin-top: 17px;
     width: 100%;
-    max-width: 430px;
+    max-width: 450px;
     padding: 16px;
     border: none;
     border-radius: 13px;
@@ -129,6 +168,29 @@ h1 {
     color: white;
     font-size: 20px;
     font-weight: bold;
+}
+
+.bingo-button:active {
+    transform: scale(0.98);
+}
+
+#message {
+    margin-top: 15px;
+    min-height: 25px;
+    color: #b9c0cc;
+}
+
+.players {
+    margin-top: 8px;
+    color: #9da7b7;
+}
+
+.game-over {
+    background: #8f2525 !important;
+}
+
+.winner {
+    background: #8a6410 !important;
 }
 
 </style>
@@ -139,9 +201,20 @@ h1 {
 
 <h1>🎯 DELINA BINGO</h1>
 
+<div class="subtitle">
+    Online Bingo
+</div>
+
 <div class="status" id="status">
     🔄 Connecting...
 </div>
+
+<div class="players">
+    👥 Players:
+    <strong id="players">0</strong>
+</div>
+
+<br>
 
 <div class="letters">
 
@@ -154,15 +227,13 @@ h1 {
 </div>
 
 <div class="card" id="card">
-
     Loading card...
-
 </div>
 
 <div class="last">
 
     <div class="last-title">
-        Last called:
+        LAST CALLED
     </div>
 
     <div id="lastNumber">
@@ -171,467 +242,12 @@ h1 {
 
 </div>
 
-<div class="live" id="live">
-    🔴 GAME STOPPED
-</div>
-
-<button
-    class="bingo-button"
-    onclick="claimBingo()">
-
-    🏆 BINGO!
-
-</button>
-
-<div id="message"></div>
-
-
-<script>
-
-const tg = window.Telegram.WebApp;
-
-tg.ready();
-tg.expand();
-
-let userId = "";
-let playerName = "";
-
-let playerCard = [];
-
-let marked = [];
-
-let gameState = {
-    running: false,
-    called: [],
-    players: 0,
-    winners: []
-};
-
-
-// ==========================
-// GET TELEGRAM USER
-// ==========================
-
-if (
-    tg.initDataUnsafe &&
-    tg.initDataUnsafe.user
-) {
-
-    userId =
-        String(
-            tg.initDataUnsafe.user.id
-        );
-
-    playerName =
-        tg.initDataUnsafe.user.first_name
-        || "Player";
-
-} else {
-
-    userId = "test-player";
-
-    playerName = "Test Player";
-
-}
-
-
-// ==========================
-// JOIN GAME
-// ==========================
-
-async function joinGame() {
-
-    try {
-
-        const response =
-            await fetch("/api/join", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    user_id: userId,
-
-                    name: playerName
-
-                })
-
-            });
-
-        const data =
-            await response.json();
-
-        console.log("JOIN:", data);
-
-        if (!data.ok) {
-
-            showMessage(
-                "❌ " + data.error
-            );
-
-            return;
-
-        }
-
-        playerCard =
-            data.card;
-
-        marked =
-            data.marked || ["FREE"];
-
-        drawCard();
-
-        await updateState();
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-        showMessage(
-            "❌ Could not connect to game"
-        );
-
-    }
-
-}
-
-
-// ==========================
-// DRAW CARD
-// ==========================
-
-function drawCard() {
-
-    const card =
-        document.getElementById("card");
-
-    card.innerHTML = "";
-
-    if (
-        !Array.isArray(playerCard) ||
-        playerCard.length !== 5
-    ) {
-
-        card.innerHTML =
-            "❌ Card could not be loaded";
-
-        return;
-
-    }
-
-    for (
-        let row = 0;
-        row < 5;
-        row++
-    ) {
-
-        for (
-            let col = 0;
-            col < 5;
-            col++
-        ) {
-
-            const value =
-                playerCard[row][col];
-
-            const cell =
-                document.createElement("div");
-
-            cell.className = "cell";
-
-            cell.textContent =
-                value;
-
-            if (value === "FREE") {
-
-                cell.classList.add("free");
-
-                cell.classList.add("marked");
-
-            }
-
-            else if (
-                marked
-                .map(String)
-                .includes(String(value))
-            ) {
-
-                cell.classList.add("marked");
-
-            }
-
-            else {
-
-                cell.onclick = function() {
-
-                    markNumber(value);
-
-                };
-
-            }
-
-            card.appendChild(cell);
-
-        }
-
-    }
-
-}
-
-
-// ==========================
-// MARK NUMBER
-// ==========================
-
-async function markNumber(number) {
-
-    if (!gameState.running) {
-
-        showMessage(
-            "🔴 Game is not running"
-        );
-
-        return;
-
-    }
-
-    try {
-
-        const response =
-            await fetch("/api/mark", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    user_id: userId,
-
-                    number: number
-
-                })
-
-            });
-
-        const data =
-            await response.json();
-
-        if (data.ok) {
-
-            marked =
-                data.marked;
-
-            drawCard();
-
-            showMessage(
-                "✅ Number marked"
-            );
-
-        }
-
-        else {
-
-            showMessage(
-                "❌ " + data.error
-            );
-
-        }
-
-    }
-
-    catch (error) {
-
-        showMessage(
-            "❌ Connection error"
-        );
-
-    }
-
-}
-
-
-// ==========================
-// UPDATE STATE
-// ==========================
-
-async function updateState() {
-
-    try {
-
-        const response =
-            await fetch("/api/state");
-
-        gameState =
-            await response.json();
-
-        updateScreen();
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-    }
-
-}
-
-
-// ==========================
-// UPDATE SCREEN
-// ==========================
-
-function updateScreen() {
-
-    const status =
-        document.getElementById("status");
-
-    const live =
-        document.getElementById("live");
-
-    const last =
-        document.getElementById("lastNumber");
-
-
-    if (gameState.running) {
-
-        status.textContent =
-            "🟢 GAME LIVE";
-
-        live.textContent =
-            "🟢 GAME LIVE";
-
-    }
-
-    else {
-
-        status.textContent =
-            "🔴 GAME STOPPED";
-
-        live.textContent =
-            "🔴 GAME STOPPED";
-
-    }
-
-
-    if (
-        gameState.called &&
-        gameState.called.length > 0
-    ) {
-
-        last.textContent =
-            gameState.called[
-                gameState.called.length - 1
-            ];
-
-    }
-
-    else {
-
-        last.textContent = "—";
-
-    }
-
-}
-
-
-// ==========================
-// BINGO
-// ==========================
-
-async function claimBingo() {
-
-    try {
-
-        const response =
-            await fetch("/api/claim", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body: JSON.stringify({
-
-                    user_id: userId
-
-                })
-
-            });
-
-        const data =
-            await response.json();
-
-        if (data.winner) {
-
-            showMessage(
-                "🏆 BINGO! Congratulations!"
-            );
-
-        }
-
-        else {
-
-            showMessage(
-                "❌ " +
-                (data.error ||
-                 data.message)
-            );
-
-        }
-
-    }
-
-    catch (error) {
-
-        showMessage(
-            "❌ Connection error"
-        );
-
-    }
-
-}
-
-
-// ==========================
-// MESSAGE
-// ==========================
-
-function showMessage(text) {
-
-    document.getElementById(
-        "message"
-    ).textContent = text;
-
-}
-
-
-// ==========================
-// START
-// ==========================
-
-joinGame();
-
-setInterval(
-    updateState,
-    2000
-);
-
-</script>
-
-</body>
-
-</html>
+<div class="called-box">
+
+    <div class="called-title">
+        🎱 Numbers Called
+    </div>
+
+    <div
+        class="called-list"
+        id="
