@@ -1,566 +1,274 @@
 const express = require("express");
 const path = require("path");
 
-const {
-    announceNumber,
-    announceWinner,
-    startBot
-} = require("./bot");
+const { announceNumber, announceWinner, startBot } = require("./bot");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-
-app.use(
-    express.static(
-        path.join(__dirname, "public")
-    )
-);
-
+app.use(express.static(path.join(__dirname, "public")));
 
 // =========================
 // GAME DATA
 // =========================
 
 const game = {
-    running: false,
-    called: [],
-    players: {},
-    winners: []
+  running: false,
+  called: [],
+  players: {},
+  winners: [],
 };
 
-
 // =========================
-// BINGO CARD
+// HELPERS
 // =========================
 
+// Fair shuffle (Fisher-Yates)
 function shuffle(array) {
-
-    return array.sort(
-        () => Math.random() - 0.5
-    );
-
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
 }
-
 
 function pickNumbers(start, end) {
-
-    const numbers = [];
-
-    for (
-        let i = start;
-        i <= end;
-        i++
-    ) {
-
-        numbers.push(i);
-
-    }
-
-    return shuffle(numbers).slice(0, 5);
-
+  const numbers = [];
+  for (let i = start; i <= end; i++) numbers.push(i);
+  return shuffle(numbers).slice(0, 5);
 }
-
 
 function createCard() {
+  const B = pickNumbers(1, 15);
+  const I = pickNumbers(16, 30);
+  const N = pickNumbers(31, 45);
+  const G = pickNumbers(46, 60);
+  const O = pickNumbers(61, 75);
 
-    const B = pickNumbers(1, 15);
-    const I = pickNumbers(16, 30);
-    const N = pickNumbers(31, 45);
-    const G = pickNumbers(46, 60);
-    const O = pickNumbers(61, 75);
-
-    const card = [];
-
-    for (
-        let row = 0;
-        row < 5;
-        row++
-    ) {
-
-        card.push([
-            B[row],
-            I[row],
-            N[row],
-            G[row],
-            O[row]
-        ]);
-
-    }
-
-    card[2][2] = "FREE";
-
-    return card;
-
+  const card = [];
+  for (let row = 0; row < 5; row++) {
+    card.push([B[row], I[row], N[row], G[row], O[row]]);
+  }
+  card[2][2] = "FREE";
+  return card;
 }
-
-
-// =========================
-// ADMIN SECURITY
-// =========================
 
 function isAdmin(req) {
-
-    const userId =
-        String(req.body.user_id || "");
-
-    const adminId =
-        String(
-            process.env.ADMIN_ID || ""
-        );
-
-    return userId === adminId;
-
+  const userId = String((req.body && req.body.user_id) || "");
+  const adminId = String(process.env.ADMIN_ID || "");
+  return adminId !== "" && userId === adminId;
 }
 
+function hasBingo(card, marked) {
+  const set = new Set(marked.map(String));
+  const has = (r, c) => set.has(String(card[r][c]));
+
+  for (let i = 0; i < 5; i++) {
+    let rowOk = true;
+    let colOk = true;
+    for (let j = 0; j < 5; j++) {
+      if (!has(i, j)) rowOk = false;
+      if (!has(j, i)) colOk = false;
+    }
+    if (rowOk || colOk) return true;
+  }
+
+  let d1 = true;
+  let d2 = true;
+  for (let i = 0; i < 5; i++) {
+    if (!has(i, i)) d1 = false;
+    if (!has(i, 4 - i)) d2 = false;
+  }
+  return d1 || d2;
+}
 
 // =========================
-// HOME
+// PAGES
 // =========================
 
 app.get("/", (req, res) => {
-
-    res.sendFile(
-        path.join(
-            __dirname,
-            "public",
-            "index.html"
-        )
-    );
-
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
-
-
-// =========================
-// HEALTH
-// =========================
 
 app.get("/health", (req, res) => {
-
-    res.json({
-        ok: true,
-        message: "Delina Bingo is online"
-    });
-
+  res.json({ ok: true, message: "Delina Bingo is online" });
 });
-
 
 // =========================
 // GAME STATE
 // =========================
 
 app.get("/api/state", (req, res) => {
-
-    res.json({
-
-        running:
-            game.running,
-
-        called:
-            game.called,
-
-        players:
-            Object.keys(
-                game.players
-            ).length,
-
-        winners:
-            game.winners
-
-    });
-
+  res.json({
+    running: game.running,
+    called: game.called,
+    players: Object.keys(game.players).length,
+    winners: game.winners,
+  });
 });
 
-
 // =========================
-// JOIN GAME
+// JOIN
 // =========================
 
 app.post("/api/join", (req, res) => {
+  const userId = String(req.body.user_id || "");
+  const name = String(req.body.name || "Player").slice(0, 40);
 
-    const userId =
-        String(
-            req.body.user_id || ""
-        );
+  if (!userId) {
+    return res.status(400).json({ ok: false, error: "User ID missing" });
+  }
 
-    const name =
-        String(
-            req.body.name || "Player"
-        );
+  if (!game.players[userId]) {
+    game.players[userId] = {
+      name,
+      card: createCard(),
+      marked: ["FREE"],
+    };
+  }
 
-    if (!userId) {
-
-        return res.status(400).json({
-
-            ok: false,
-
-            error:
-                "User ID missing"
-
-        });
-
-    }
-
-    if (!game.players[userId]) {
-
-        game.players[userId] = {
-
-            name: name,
-
-            card:
-                createCard(),
-
-            marked:
-                ["FREE"]
-
-        };
-
-    }
-
-    const player =
-        game.players[userId];
-
-    res.json({
-
-        ok: true,
-
-        name:
-            player.name,
-
-        card:
-            player.card,
-
-        marked:
-            player.marked
-
-    });
-
+  const player = game.players[userId];
+  res.json({
+    ok: true,
+    name: player.name,
+    card: player.card,
+    marked: player.marked,
+  });
 });
-
 
 // =========================
 // MARK NUMBER
 // =========================
 
 app.post("/api/mark", (req, res) => {
+  const userId = String(req.body.user_id || "");
+  const number = req.body.number;
+  const player = game.players[userId];
 
-    const userId =
-        String(
-            req.body.user_id || ""
-        );
+  if (!player) {
+    return res.status(404).json({ ok: false, error: "Player not found" });
+  }
+  if (!game.running) {
+    return res.json({ ok: false, error: "Game is not running" });
+  }
 
-    const number =
-        req.body.number;
+  if (number !== "FREE") {
+    const num = Number(number);
 
-    const player =
-        game.players[userId];
-
-    if (!player) {
-
-        return res.status(404).json({
-
-            ok: false,
-
-            error:
-                "Player not found"
-
-        });
-
+    if (!game.called.includes(num)) {
+      return res.json({ ok: false, error: "Number has not been called" });
     }
 
-    if (!game.running) {
-
-        return res.json({
-
-            ok: false,
-
-            error:
-                "Game is not running"
-
-        });
-
+    const onCard = player.card.some((row) => row.includes(num));
+    if (!onCard) {
+      return res.json({ ok: false, error: "Number is not on your card" });
     }
 
-    if (number !== "FREE") {
+    if (!player.marked.includes(num)) player.marked.push(num);
+  }
 
-        const num =
-            Number(number);
-
-        if (
-            !game.called.includes(num)
-        ) {
-
-            return res.json({
-
-                ok: false,
-
-                error:
-                    "Number has not been called"
-
-            });
-
-        }
-
-    }
-
-    if (
-        !player.marked.includes(number)
-    ) {
-
-        player.marked.push(number);
-
-    }
-
-    res.json({
-
-        ok: true,
-
-        marked:
-            player.marked
-
-    });
-
+  res.json({ ok: true, marked: player.marked });
 });
-
-
-// =========================
-// BINGO CHECK
-// =========================
-
-function hasBingo(card, marked) {
-
-    const markedSet =
-        new Set(
-            marked.map(String)
-        );
-
-
-    // ROWS
-
-    for (
-        let row = 0;
-        row < 5;
-        row++
-    ) {
-
-        let complete = true;
-
-        for (
-            let col = 0;
-            col < 5;
-            col++
-        ) {
-
-            if (
-                !markedSet.has(
-                    String(
-                        card[row][col]
-                    )
-                )
-            ) {
-
-                complete = false;
-
-                break;
-
-            }
-
-        }
-
-        if (complete) {
-
-            return true;
-
-        }
-
-    }
-
-
-    // COLUMNS
-
-    for (
-        let col = 0;
-        col < 5;
-        col++
-    ) {
-
-        let complete = true;
-
-        for (
-            let row = 0;
-            row < 5;
-            row++
-        ) {
-
-            if (
-                !markedSet.has(
-                    String(
-                        card[row][col]
-                    )
-                )
-            ) {
-
-                complete = false;
-
-                break;
-
-            }
-
-        }
-
-        if (complete) {
-
-            return true;
-
-        }
-
-    }
-
-
-    // DIAGONAL 1
-
-    let diagonal1 = true;
-
-    for (
-        let i = 0;
-        i < 5;
-        i++
-    ) {
-
-        if (
-            !markedSet.has(
-                String(card[i][i])
-            )
-        ) {
-
-            diagonal1 = false;
-
-            break;
-
-        }
-
-    }
-
-    if (diagonal1) {
-
-        return true;
-
-    }
-
-
-    // DIAGONAL 2
-
-    let diagonal2 = true;
-
-    for (
-        let i = 0;
-        i < 5;
-        i++
-    ) {
-
-        if (
-            !markedSet.has(
-                String(
-                    card[i][4 - i]
-                )
-            )
-        ) {
-
-            diagonal2 = false;
-
-            break;
-
-        }
-
-    }
-
-    return diagonal2;
-
-}
-
 
 // =========================
 // CLAIM BINGO
 // =========================
 
 app.post("/api/claim", async (req, res) => {
+  const userId = String(req.body.user_id || "");
+  const player = game.players[userId];
 
-    const userId =
-        String(
-            req.body.user_id || ""
-        );
+  if (!player) {
+    return res.json({ ok: false, error: "Player not found" });
+  if (hasBingo(player.card, player.marked)) {
+    if (!game.winners.includes(userId)) game.winners.push(userId);
+    game.running = false;
 
-    const player =
-        game.players[userId];
+    console.log(`🏆 BINGO WINNER: ${player.name}`);
 
-    if (!player) {
+    // Do not make the player wait for all messages to be sent
+    announceWinner(player.name, game.players).catch((e) =>
+      console.error("announceWinner error:", e.message)
+    );
 
-        return res.json({
+    return res.json({ ok: true, winner: true, name: player.name });
+  }
 
-            ok: false,
+  res.json({ ok: true, winner: false });
+});
 
-            error:
-                "Player not found"
+// =========================
+// ADMIN
+// =========================
 
-        });
+app.post("/api/admin/start", (req, res) => {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ ok: false, error: "Not allowed" });
+  }
 
-    }
+  game.running = true;
+  game.called = [];
+  game.winners = [];
 
-    if (!game.running) {
+  // Give everyone a fresh card
+  for (const id of Object.keys(game.players)) {
+    game.players[id].card = createCard();
+    game.players[id].marked = ["FREE"];
+  }
 
-        return res.json({
+  res.json({ ok: true, running: true });
+});
 
-            ok: false,
+app.post("/api/admin/call", async (req, res) => {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ ok: false, error: "Not allowed" });
+  }
+  if (!game.running) {
+    return res.json({ ok: false, error: "Game is not running" });
+  }
 
-            error:
-                "Game is not running"
+  const remaining = [];
+  for (let n = 1; n <= 75; n++) {
+    if (!game.called.includes(n)) remaining.push(n);
+  }
 
-        });
+  if (remaining.length === 0) {
+    return res.json({ ok: false, error: "All numbers have been called" });
+  }
 
-    }
+  const number = remaining[Math.floor(Math.random() * remaining.length)];
+  game.called.push(number);
 
-    if (
-        hasBingo(
-            player.card,
-            player.marked
-        )
-    ) {
+  // Telegram messages per number are off by default (spammy + rate limits).
+  // Set NOTIFY_NUMBERS=true in Render to turn them on.
+  if (process.env.NOTIFY_NUMBERS === "true") {
+    announceNumber(number, game.players).catch((e) =>
+      console.error("announceNumber error:", e.message)
+    );
+  }
 
-        if (
-            !game.winners.includes(userId)
-        ) {
+  res.json({ ok: true, number, called: game.called });
+});
 
-            game.winners.push(userId);
+app.post("/api/admin/reset", (req, res) => {
+  if (!isAdmin(req)) {
+    return res.status(403).json({ ok: false, error: "Not allowed" });
+  }
 
-        }
+  game.running = false;
+  game.called = [];
+  game.players = {};
+  game.winners = [];
 
-        game.running = false;
+  res.json({ ok: true });
+});
 
-        console.log(
-            `🏆 BINGO WINNER: ${player.name}`
-        );
+// =========================
+// START SERVER + BOT
+// =========================
 
-        await announceWinner(
-            player.name,
-            game.players
-        );
-
-        return res.json({
-
-            ok: true,
-
-            winner: true,
-
-            name:
-                player.name
-
-        });
-
-    }
-
-    res.json({
-
-        ok: true,
-
-        winner
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server running on port ${PORT}`);
+  startBot();
+});
