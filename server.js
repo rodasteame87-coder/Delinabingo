@@ -8,16 +8,13 @@ const PORT = process.env.PORT || 10000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// =========================
-// GAME DATA
-// =========================
-
 const game = {
     running: false,
     called: [],
     players: {},
     winners: []
 };
+
 
 // =========================
 // BINGO CARD
@@ -64,6 +61,7 @@ function createCard() {
     return card;
 }
 
+
 // =========================
 // ADMIN SECURITY
 // =========================
@@ -79,6 +77,7 @@ function isAdmin(req) {
     return userId === adminId;
 }
 
+
 // =========================
 // HOME
 // =========================
@@ -86,10 +85,15 @@ function isAdmin(req) {
 app.get("/", (req, res) => {
 
     res.sendFile(
-        path.join(__dirname, "public", "index.html")
+        path.join(
+            __dirname,
+            "public",
+            "index.html"
+        )
     );
 
 });
+
 
 // =========================
 // HEALTH
@@ -103,6 +107,7 @@ app.get("/health", (req, res) => {
     });
 
 });
+
 
 // =========================
 // GAME STATE
@@ -125,8 +130,9 @@ app.get("/api/state", (req, res) => {
 
 });
 
+
 // =========================
-// JOIN GAME
+// JOIN
 // =========================
 
 app.post("/api/join", (req, res) => {
@@ -180,6 +186,7 @@ app.post("/api/join", (req, res) => {
 
 });
 
+
 // =========================
 // MARK NUMBER
 // =========================
@@ -207,9 +214,22 @@ app.post("/api/mark", (req, res) => {
 
     }
 
+    if (!game.running) {
+
+        return res.json({
+
+            ok: false,
+
+            error: "Game is not running"
+
+        });
+
+    }
+
     if (number !== "FREE") {
 
-        const num = Number(number);
+        const num =
+            Number(number);
 
         if (!game.called.includes(num)) {
 
@@ -241,6 +261,7 @@ app.post("/api/mark", (req, res) => {
 
 });
 
+
 // =========================
 // BINGO CHECK
 // =========================
@@ -249,6 +270,7 @@ function hasBingo(card, marked) {
 
     const markedSet =
         new Set(marked.map(String));
+
 
     // ROWS
 
@@ -265,7 +287,6 @@ function hasBingo(card, marked) {
             ) {
 
                 complete = false;
-
                 break;
 
             }
@@ -275,6 +296,7 @@ function hasBingo(card, marked) {
         if (complete) return true;
 
     }
+
 
     // COLUMNS
 
@@ -291,7 +313,6 @@ function hasBingo(card, marked) {
             ) {
 
                 complete = false;
-
                 break;
 
             }
@@ -301,6 +322,7 @@ function hasBingo(card, marked) {
         if (complete) return true;
 
     }
+
 
     // DIAGONAL 1
 
@@ -315,7 +337,6 @@ function hasBingo(card, marked) {
         ) {
 
             diagonal1 = false;
-
             break;
 
         }
@@ -323,6 +344,7 @@ function hasBingo(card, marked) {
     }
 
     if (diagonal1) return true;
+
 
     // DIAGONAL 2
 
@@ -337,7 +359,6 @@ function hasBingo(card, marked) {
         ) {
 
             diagonal2 = false;
-
             break;
 
         }
@@ -345,7 +366,9 @@ function hasBingo(card, marked) {
     }
 
     return diagonal2;
+
 }
+
 
 // =========================
 // CLAIM BINGO
@@ -422,8 +445,9 @@ app.post("/api/claim", (req, res) => {
 
 });
 
+
 // =========================
-// ADMIN START
+// START GAME
 // =========================
 
 app.post("/api/admin/start", (req, res) => {
@@ -458,8 +482,9 @@ app.post("/api/admin/start", (req, res) => {
 
 });
 
+
 // =========================
-// ADMIN STOP
+// STOP GAME
 // =========================
 
 app.post("/api/admin/stop", (req, res) => {
@@ -488,8 +513,9 @@ app.post("/api/admin/stop", (req, res) => {
 
 });
 
+
 // =========================
-// ADMIN CALL NUMBER
+// CALL NUMBER
 // =========================
 
 app.post("/api/admin/call", (req, res) => {
@@ -562,6 +588,68 @@ app.post("/api/admin/call", (req, res) => {
     });
 
 });
+
+
+// =========================
+// AUTO CALL NUMBER
+// =========================
+
+function autoCallNumber() {
+
+    if (!game.running) {
+        return;
+    }
+
+    if (game.called.length >= 75) {
+
+        console.log(
+            "🎱 All numbers have been called"
+        );
+
+        game.running = false;
+
+        return;
+
+    }
+
+    const available = [];
+
+    for (let i = 1; i <= 75; i++) {
+
+        if (!game.called.includes(i)) {
+
+            available.push(i);
+
+        }
+
+    }
+
+    const number =
+        available[
+            Math.floor(
+                Math.random() *
+                available.length
+            )
+        ];
+
+    game.called.push(number);
+
+    console.log(
+        "🎱 Auto called:",
+        number
+    );
+
+}
+
+
+// Every 10 seconds
+
+setInterval(() => {
+
+    autoCallNumber();
+
+}, 10000);
+
 
 // =========================
 // START SERVER
