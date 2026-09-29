@@ -1,184 +1,190 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
-    >
 
-    <title>Delina Bingo</title>
+<meta charset="UTF-8">
 
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+<title>Delina Bingo</title>
 
-        body {
-            margin: 0;
-            padding: 18px 12px 30px;
-            background: #10141c;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-        h1 {
-            margin: 5px 0 18px;
-            font-size: 29px;
-        }
+<style>
 
-        .status {
-            max-width: 430px;
-            margin: 0 auto 15px;
-            padding: 12px;
-            border-radius: 12px;
-            background: #1d2633;
-            font-weight: bold;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        .letters,
-        .card {
-            width: 100%;
-            max-width: 430px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+body {
+    margin: 0;
+    padding: 18px 12px 30px;
+    background: #10141c;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
 
-        .letters {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 7px;
-            margin-bottom: 7px;
-        }
+h1 {
+    margin: 5px 0 18px;
+    font-size: 29px;
+}
 
-        .letter {
-            background: #293446;
-            padding: 11px 5px;
-            border-radius: 9px;
-            font-size: 21px;
-            font-weight: bold;
-        }
+.status {
+    max-width: 430px;
+    margin: 0 auto 15px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #1d2633;
+    font-weight: bold;
+}
 
-        .card {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 7px;
-        }
+.letters,
+.card {
+    width: 100%;
+    max-width: 430px;
+    margin-left: auto;
+    margin-right: auto;
+}
 
-        .cell {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #202938;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-        }
+.letters {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+    margin-bottom: 7px;
+}
 
-        .cell.marked {
-            background: #20a463;
-            transform: scale(0.96);
-        }
+.letter {
+    background: #293446;
+    padding: 11px 5px;
+    border-radius: 9px;
+    font-size: 21px;
+    font-weight: bold;
+}
 
-        .free {
-            background: #7657d9;
-            cursor: default;
-        }
+.card {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+}
 
-        .last {
-            max-width: 430px;
-            margin: 20px auto 0;
-            background: #1d2633;
-            padding: 14px;
-            border-radius: 14px;
-        }
+.cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #202938;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+}
 
-        .last-title {
-            font-size: 15px;
-            color: #b9c0cc;
-        }
+.free {
+    background: #7657d9;
+}
 
-        #lastNumber {
-            font-size: 42px;
-            font-weight: bold;
-            margin-top: 4px;
-        }
+.marked {
+    background: #20a463;
+}
 
-        .live {
-            margin-top: 14px;
-            font-size: 18px;
-            font-weight: bold;
-        }
+.last {
+    max-width: 430px;
+    margin: 20px auto 0;
+    background: #1d2633;
+    padding: 14px;
+    border-radius: 14px;
+}
 
-        .bingo-button {
-            margin-top: 17px;
-            width: 100%;
-            max-width: 430px;
-            padding: 16px;
-            border: none;
-            border-radius: 13px;
-            background: #20a463;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-        }
+.last-title {
+    font-size: 15px;
+    color: #b9c0cc;
+}
 
-        .bingo-button:active {
-            transform: scale(0.98);
-        }
+#lastNumber {
+    font-size: 42px;
+    font-weight: bold;
+    margin-top: 4px;
+}
 
-        #message {
-            max-width: 430px;
-            margin: 13px auto 0;
-            min-height: 20px;
-            color: #b9c0cc;
-        }
-    </style>
+.live {
+    margin-top: 14px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#message {
+    margin-top: 15px;
+    color: #b9c0cc;
+}
+
+.bingo-button {
+    margin-top: 17px;
+    width: 100%;
+    max-width: 430px;
+    padding: 16px;
+    border: none;
+    border-radius: 13px;
+    background: #20a463;
+    color: white;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+</style>
+
 </head>
 
 <body>
 
-    <h1>🎯 DELINA BINGO</h1>
+<h1>🎯 DELINA BINGO</h1>
 
-    <div class="status" id="status">
-        Connecting...
+<div class="status" id="status">
+    🔄 Connecting...
+</div>
+
+<div class="letters">
+
+    <div class="letter">B</div>
+    <div class="letter">I</div>
+    <div class="letter">N</div>
+    <div class="letter">G</div>
+    <div class="letter">O</div>
+
+</div>
+
+<div class="card" id="card">
+
+    Loading card...
+
+</div>
+
+<div class="last">
+
+    <div class="last-title">
+        Last called:
     </div>
 
-    <div class="letters">
-        <div class="letter">B</div>
-        <div class="letter">I</div>
-        <div class="letter">N</div>
-        <div class="letter">G</div>
-        <div class="letter">O</div>
+    <div id="lastNumber">
+        —
     </div>
 
-    <div class="card" id="card"></div>
+</div>
 
-    <div class="last">
-        <div class="last-title">
-            Last called:
-        </div>
+<div class="live" id="live">
+    🔴 GAME STOPPED
+</div>
 
-        <div id="lastNumber">
-            —
-        </div>
-    </div>
+<button
+    class="bingo-button"
+    onclick="claimBingo()">
 
-    <div class="live" id="live">
-        🔴 GAME STOPPED
-    </div>
+    🏆 BINGO!
 
-    <button class="bingo-button" onclick="claimBingo()">
-        🏆 BINGO!
-    </button>
+</button>
 
-    <div id="message"></div>
+<div id="message"></div>
+
 
 <script>
 
@@ -189,29 +195,45 @@ tg.expand();
 
 let userId = "";
 let playerName = "";
+
 let playerCard = [];
+
 let marked = [];
-let gameState = {};
+
+let gameState = {
+    running: false,
+    called: [],
+    players: 0,
+    winners: []
+};
+
 
 // ==========================
-// TELEGRAM USER
+// GET TELEGRAM USER
 // ==========================
 
-if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+if (
+    tg.initDataUnsafe &&
+    tg.initDataUnsafe.user
+) {
 
-    userId = String(tg.initDataUnsafe.user.id);
+    userId =
+        String(
+            tg.initDataUnsafe.user.id
+        );
 
     playerName =
-        tg.initDataUnsafe.user.first_name ||
-        "Player";
+        tg.initDataUnsafe.user.first_name
+        || "Player";
 
 } else {
 
-    // For testing outside Telegram
-    userId = "test-" + Date.now();
+    userId = "test-player";
 
     playerName = "Test Player";
+
 }
+
 
 // ==========================
 // JOIN GAME
@@ -221,49 +243,65 @@ async function joinGame() {
 
     try {
 
-        const response = await fetch("/api/join", {
+        const response =
+            await fetch("/api/join", {
 
-            method: "POST",
+                method: "POST",
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-            body: JSON.stringify({
+                body: JSON.stringify({
 
-                user_id: userId,
+                    user_id: userId,
 
-                name: playerName
+                    name: playerName
 
-            })
+                })
 
-        });
+            });
 
-        const data = await response.json();
+        const data =
+            await response.json();
+
+        console.log("JOIN:", data);
 
         if (!data.ok) {
 
-            showMessage(data.error || "Could not join game");
+            showMessage(
+                "❌ " + data.error
+            );
 
             return;
 
         }
 
-        playerCard = data.card;
-        marked = data.marked || [];
+        playerCard =
+            data.card;
+
+        marked =
+            data.marked || ["FREE"];
 
         drawCard();
 
         await updateState();
 
-    } catch (error) {
+    }
 
-        showMessage("Connection error");
+    catch (error) {
 
         console.error(error);
 
+        showMessage(
+            "❌ Could not connect to game"
+        );
+
     }
+
 }
+
 
 // ==========================
 // DRAW CARD
@@ -271,14 +309,34 @@ async function joinGame() {
 
 function drawCard() {
 
-    const cardElement =
+    const card =
         document.getElementById("card");
 
-    cardElement.innerHTML = "";
+    card.innerHTML = "";
 
-    for (let row = 0; row < 5; row++) {
+    if (
+        !Array.isArray(playerCard) ||
+        playerCard.length !== 5
+    ) {
 
-        for (let col = 0; col < 5; col++) {
+        card.innerHTML =
+            "❌ Card could not be loaded";
+
+        return;
+
+    }
+
+    for (
+        let row = 0;
+        row < 5;
+        row++
+    ) {
+
+        for (
+            let col = 0;
+            col < 5;
+            col++
+        ) {
 
             const value =
                 playerCard[row][col];
@@ -288,32 +346,45 @@ function drawCard() {
 
             cell.className = "cell";
 
+            cell.textContent =
+                value;
+
             if (value === "FREE") {
 
                 cell.classList.add("free");
+
                 cell.classList.add("marked");
-
-            } else {
-
-                cell.onclick = () => markNumber(value);
 
             }
 
-            if (
-                marked.map(String)
-                    .includes(String(value))
+            else if (
+                marked
+                .map(String)
+                .includes(String(value))
             ) {
 
                 cell.classList.add("marked");
 
             }
 
-            cell.textContent = value;
+            else {
 
-            cardElement.appendChild(cell);
+                cell.onclick = function() {
+
+                    markNumber(value);
+
+                };
+
+            }
+
+            card.appendChild(cell);
+
         }
+
     }
+
 }
+
 
 // ==========================
 // MARK NUMBER
@@ -323,15 +394,9 @@ async function markNumber(number) {
 
     if (!gameState.running) {
 
-        showMessage("🔴 Game is not running");
-
-        return;
-    }
-
-    if (
-        marked.map(String)
-            .includes(String(number))
-    ) {
+        showMessage(
+            "🔴 Game is not running"
+        );
 
         return;
 
@@ -339,26 +404,234 @@ async function markNumber(number) {
 
     try {
 
-        const response = await fetch("/api/mark", {
+        const response =
+            await fetch("/api/mark", {
 
-            method: "POST",
+                method: "POST",
 
-            headers: {
-                "Content-Type": "application/json"
-            },
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-            body: JSON.stringify({
+                body: JSON.stringify({
 
-                user_id: userId,
+                    user_id: userId,
 
-                number: number
+                    number: number
 
-            })
+                })
 
-        });
+            });
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
         if (data.ok) {
 
-           
+            marked =
+                data.marked;
+
+            drawCard();
+
+            showMessage(
+                "✅ Number marked"
+            );
+
+        }
+
+        else {
+
+            showMessage(
+                "❌ " + data.error
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        showMessage(
+            "❌ Connection error"
+        );
+
+    }
+
+}
+
+
+// ==========================
+// UPDATE STATE
+// ==========================
+
+async function updateState() {
+
+    try {
+
+        const response =
+            await fetch("/api/state");
+
+        gameState =
+            await response.json();
+
+        updateScreen();
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+// ==========================
+// UPDATE SCREEN
+// ==========================
+
+function updateScreen() {
+
+    const status =
+        document.getElementById("status");
+
+    const live =
+        document.getElementById("live");
+
+    const last =
+        document.getElementById("lastNumber");
+
+
+    if (gameState.running) {
+
+        status.textContent =
+            "🟢 GAME LIVE";
+
+        live.textContent =
+            "🟢 GAME LIVE";
+
+    }
+
+    else {
+
+        status.textContent =
+            "🔴 GAME STOPPED";
+
+        live.textContent =
+            "🔴 GAME STOPPED";
+
+    }
+
+
+    if (
+        gameState.called &&
+        gameState.called.length > 0
+    ) {
+
+        last.textContent =
+            gameState.called[
+                gameState.called.length - 1
+            ];
+
+    }
+
+    else {
+
+        last.textContent = "—";
+
+    }
+
+}
+
+
+// ==========================
+// BINGO
+// ==========================
+
+async function claimBingo() {
+
+    try {
+
+        const response =
+            await fetch("/api/claim", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    user_id: userId
+
+                })
+
+            });
+
+        const data =
+            await response.json();
+
+        if (data.winner) {
+
+            showMessage(
+                "🏆 BINGO! Congratulations!"
+            );
+
+        }
+
+        else {
+
+            showMessage(
+                "❌ " +
+                (data.error ||
+                 data.message)
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        showMessage(
+            "❌ Connection error"
+        );
+
+    }
+
+}
+
+
+// ==========================
+// MESSAGE
+// ==========================
+
+function showMessage(text) {
+
+    document.getElementById(
+        "message"
+    ).textContent = text;
+
+}
+
+
+// ==========================
+// START
+// ==========================
+
+joinGame();
+
+setInterval(
+    updateState,
+    2000
+);
+
+</script>
+
+</body>
+
+</html>
