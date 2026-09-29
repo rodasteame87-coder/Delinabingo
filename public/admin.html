@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Delina Bingo Admin</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            padding: 20px 15px;
+
+            background: #10141c;
+
+            color: white;
+
+            font-family: Arial, sans-serif;
+
+            text-align: center;
+
+        }
+
+        h1 {
+
+            margin-bottom: 20px;
+
+        }
+
+        .panel {
+
+            max-width: 450px;
+
+            margin: auto;
+
+        }
+
+        input {
+
+            width: 100%;
+
+            padding: 15px;
+
+            margin-bottom: 12px;
+
+            border: none;
+
+            border-radius: 10px;
+
+            background: #202938;
+
+            color: white;
+
+            font-size: 18px;
+
+            text-align: center;
+
+        }
+
+        button {
+
+            width: 100%;
+
+            padding: 16px;
+
+            margin-top: 10px;
+
+            border: none;
+
+            border-radius: 12px;
+
+            color: white;
+
+            font-size: 18px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+        }
+
+        .start {
+
+            background: #20a463;
+
+        }
+
+        .stop {
+
+            background: #d64545;
+
+        }
+
+        .call {
+
+            background: #7657d9;
+
+        }
+
+        .stats {
+
+            margin-top: 20px;
+
+            padding: 18px;
+
+            border-radius: 14px;
+
+            background: #1d2633;
+
+            font-size: 18px;
+
+            line-height: 1.8;
+
+        }
+
+        #message {
+
+            margin-top: 15px;
+
+            min-height: 25px;
+
+            color: #b9c0cc;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>🎯 DELINA BINGO</h1>
+
+    <div class="panel">
+
+        <input
+            id="adminId"
+            type="number"
+            placeholder="Admin Telegram ID"
+        >
+
+        <button
+            class="start"
+            onclick="startGame()"
+        >
+            ▶️ START GAME
+        </button>
+
+        <button
+            class="stop"
+            onclick="stopGame()"
+        >
+            ⏹ STOP GAME
+        </button>
+
+        <hr style="margin:25px 0;border-color:#293446;">
+
+        <input
+            id="number"
+            type="number"
+            min="1"
+            max="75"
+            placeholder="Number 1 - 75"
+        >
+
+        <button
+            class="call"
+            onclick="callNumber()"
+        >
+            🎱 CALL NUMBER
+        </button>
+
+        <div class="stats">
+
+            <div>
+                Game:
+                <strong id="gameStatus">
+                    —
+                </strong>
+            </div>
+
+            <div>
+                Players:
+                <strong id="players">
+                    0
+                </strong>
+            </div>
+
+            <div>
+                Numbers Called:
+                <strong id="called">
+                    0
+                </strong>
+            </div>
+
+            <div>
+                Last Number:
+                <strong id="last">
+                    —
+                </strong>
+            </div>
+
+            <div>
+                Winners:
+                <strong id="winners">
+                    0
+                </strong>
+            </div>
+
+        </div>
+
+        <div id="message"></div>
+
+    </div>
+
+<script>
+
+const adminId = document.getElementById("adminId");
+
+const numberInput =
+    document.getElementById("number");
+
+const message =
+    document.getElementById("message");
+
+
+// ==========================
+// MESSAGE
+// ==========================
+
+function showMessage(text) {
+
+    message.textContent = text;
+
+}
+
+
+// ==========================
+// START GAME
+// ==========================
+
+async function startGame() {
+
+    if (!adminId.value) {
+
+        showMessage(
+            "⚠️ Enter your Telegram ID"
+        );
+
+        return;
+
+    }
+
+    try {
+
+        const response =
+            await fetch("/api/admin/start", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    user_id: adminId.value
+
+                })
+
+            });
+
+        const data =
+            await response.json();
+
+        if (data.ok) {
+
+            showMessage(
+                "🟢 Game started!"
+            );
+
+            updateState();
+
+        } else {
+
+            showMessage(
+                "❌ " + data.error
+            );
+
+        }
+
+    } catch (error) {
+
+        showMessage(
+            "❌ Connection error"
+        );
+
+    }
+
+}
+
+
+// ==========================
+// STOP GAME
+// ==========================
+
+async function stopGame() {
+
+    if (!adminId.value) {
+
+        showMessage(
+            "⚠️ Enter your Telegram ID"
+        );
+
+        return;
+
+    }
+
+    try {
+
+        const response =
+            await fetch("/api/admin/stop", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    user_id: adminId.value
+
+                })
+
+            });
+
+        const data =
+            await response.json();
+
+        if (data.ok) {
+
+            showMessage(
+                "🔴 Game stopped"
+            );
+
+            updateState();
+
+        } else {
+
+            showMessage(
+                "❌ " + data.error
+            );
+
+        }
+
+    } catch (error) {
+
+        showMessage(
+            "❌ Connection error"
+        );
+
+    }
+
+}
+
+
+// ==========================
+// CALL NUMBER
+// ==========================
+
+async function callNumber() {
+
+    if (!adminId.value) {
+
+        showMessage(
+            "⚠️ Enter your Telegram ID"
+        );
+
+        return;
+
+    }
+
+    const number =
+        Number(numberInput.value);
+
+    if (
+        !Number.isInteger(number) ||
+        number < 1 ||
+        number > 75
+    ) {
+
+        showMessage(
+            "⚠️ Enter a number from 1 to 75"
+        );
+
+        return;
+
+    }
+
+    try {
+
+        const response =
+            await fetch("/api/admin/call", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    user_id: adminId.value,
+
+                    number: number
+
+                })
+
+            });
+
+        const data =
+            await response.json();
+
+        if (data.ok) {
+
+            showMessage(
+                "🎱 Called number: " +
+                data.number
+            );
+
+            numberInput.value = "";
+
+            updateState();
+
+        } else {
+
+            showMessage(
+                "❌ " + data.error
+            );
+
+        }
+
+    } catch (error) {
+
+        showMessage(
+            "❌ Connection error"
+        );
+
+    }
+
+}
+
+
+// ==========================
+// GAME STATE
+// ==========================
+
+async function updateState() {
+
+    try {
+
+        const response =
+            await fetch("/api/state");
+
+        const data =
+            await response.json();
+
+        document.getElementById(
+            "gameStatus"
+        ).textContent =
+            data.running
+                ? "🟢 LIVE"
+                : "🔴 STOPPED";
+
+        document.getElementById(
+            "players"
+        ).textContent =
+            data.players;
+
+        document.getElementById(
+            "called"
+        ).textContent =
+            data.called.length;
+
+        document.getElementById(
+            "winners"
+        ).textContent =
+            data.winners.length;
+
+        document.getElementById(
+            "last"
+        ).textContent =
+            data.called.length > 0
+                ? data.called[data.called.length - 1]
+                : "—";
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+
+// Update every 2 seconds
+
+updateState();
+
+setInterval(
+    updateState,
+    2000
+);
+
+</script>
+
+</body>
+
+</html>
