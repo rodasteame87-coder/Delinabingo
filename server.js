@@ -1,18 +1,36 @@
 const express = require("express");
 const path = require("path");
-require("./bot");
+
+const { announceNumber } = require("./bot");
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+
+const PORT =
+    process.env.PORT || 10000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+
+app.use(
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
+
+
+// =========================
+// GAME DATA
+// =========================
 
 const game = {
+
     running: false,
+
     called: [],
+
     players: {},
+
     winners: []
+
 };
 
 
@@ -21,44 +39,82 @@ const game = {
 // =========================
 
 function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
+
+    return array.sort(
+        () => Math.random() - 0.5
+    );
+
 }
 
+
 function pickNumbers(start, end) {
+
     const numbers = [];
 
-    for (let i = start; i <= end; i++) {
+    for (
+        let i = start;
+        i <= end;
+        i++
+    ) {
+
         numbers.push(i);
+
     }
 
     return shuffle(numbers).slice(0, 5);
+
 }
+
 
 function createCard() {
 
-    const B = pickNumbers(1, 15);
-    const I = pickNumbers(16, 30);
-    const N = pickNumbers(31, 45);
-    const G = pickNumbers(46, 60);
-    const O = pickNumbers(61, 75);
+    const B =
+        pickNumbers(1, 15);
+
+    const I =
+        pickNumbers(16, 30);
+
+    const N =
+        pickNumbers(31, 45);
+
+    const G =
+        pickNumbers(46, 60);
+
+    const O =
+        pickNumbers(61, 75);
+
 
     const card = [];
 
-    for (let row = 0; row < 5; row++) {
+
+    for (
+        let row = 0;
+        row < 5;
+        row++
+    ) {
 
         card.push([
+
             B[row],
+
             I[row],
+
             N[row],
+
             G[row],
+
             O[row]
+
         ]);
 
     }
 
+
     card[2][2] = "FREE";
 
+
     return card;
+
 }
 
 
@@ -69,12 +125,17 @@ function createCard() {
 function isAdmin(req) {
 
     const userId =
-        String(req.body.user_id || "");
+        String(
+            req.body.user_id || ""
+        );
 
     const adminId =
-        String(process.env.ADMIN_ID || "");
+        String(
+            process.env.ADMIN_ID || ""
+        );
 
     return userId === adminId;
+
 }
 
 
@@ -85,11 +146,13 @@ function isAdmin(req) {
 app.get("/", (req, res) => {
 
     res.sendFile(
+
         path.join(
             __dirname,
             "public",
             "index.html"
         )
+
     );
 
 });
@@ -102,8 +165,12 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
 
     res.json({
+
         ok: true,
-        message: "Delina Bingo is online"
+
+        message:
+            "Delina Bingo is online"
+
     });
 
 });
@@ -117,14 +184,19 @@ app.get("/api/state", (req, res) => {
 
     res.json({
 
-        running: game.running,
+        running:
+            game.running,
 
-        called: game.called,
+        called:
+            game.called,
 
         players:
-            Object.keys(game.players).length,
+            Object.keys(
+                game.players
+            ).length,
 
-        winners: game.winners
+        winners:
+            game.winners
 
     });
 
@@ -132,16 +204,22 @@ app.get("/api/state", (req, res) => {
 
 
 // =========================
-// JOIN
+// JOIN GAME
 // =========================
 
 app.post("/api/join", (req, res) => {
 
     const userId =
-        String(req.body.user_id || "");
+        String(
+            req.body.user_id || ""
+        );
 
     const name =
-        String(req.body.name || "Player");
+        String(
+            req.body.name ||
+            "Player"
+        );
+
 
     if (!userId) {
 
@@ -149,11 +227,13 @@ app.post("/api/join", (req, res) => {
 
             ok: false,
 
-            error: "User ID missing"
+            error:
+                "User ID missing"
 
         });
 
     }
+
 
     if (!game.players[userId]) {
 
@@ -161,26 +241,33 @@ app.post("/api/join", (req, res) => {
 
             name: name,
 
-            card: createCard(),
+            card:
+                createCard(),
 
-            marked: ["FREE"]
+            marked:
+                ["FREE"]
 
         };
 
     }
 
+
     const player =
         game.players[userId];
+
 
     res.json({
 
         ok: true,
 
-        name: player.name,
+        name:
+            player.name,
 
-        card: player.card,
+        card:
+            player.card,
 
-        marked: player.marked
+        marked:
+            player.marked
 
     });
 
@@ -194,13 +281,17 @@ app.post("/api/join", (req, res) => {
 app.post("/api/mark", (req, res) => {
 
     const userId =
-        String(req.body.user_id || "");
+        String(
+            req.body.user_id || ""
+        );
 
     const number =
         req.body.number;
 
+
     const player =
         game.players[userId];
+
 
     if (!player) {
 
@@ -208,11 +299,13 @@ app.post("/api/mark", (req, res) => {
 
             ok: false,
 
-            error: "Player not found"
+            error:
+                "Player not found"
 
         });
 
     }
+
 
     if (!game.running) {
 
@@ -220,24 +313,30 @@ app.post("/api/mark", (req, res) => {
 
             ok: false,
 
-            error: "Game is not running"
+            error:
+                "Game is not running"
 
         });
 
     }
+
 
     if (number !== "FREE") {
 
         const num =
             Number(number);
 
-        if (!game.called.includes(num)) {
+
+        if (
+            !game.called.includes(num)
+        ) {
 
             return res.json({
 
                 ok: false,
 
-                error: "Number has not been called"
+                error:
+                    "Number has not been called"
 
             });
 
@@ -245,17 +344,22 @@ app.post("/api/mark", (req, res) => {
 
     }
 
-    if (!player.marked.includes(number)) {
+
+    if (
+        !player.marked.includes(number)
+    ) {
 
         player.marked.push(number);
 
     }
 
+
     res.json({
 
         ok: true,
 
-        marked: player.marked
+        marked:
+            player.marked
 
     });
 
@@ -269,57 +373,93 @@ app.post("/api/mark", (req, res) => {
 function hasBingo(card, marked) {
 
     const markedSet =
-        new Set(marked.map(String));
+        new Set(
+            marked.map(String)
+        );
 
 
     // ROWS
 
-    for (let row = 0; row < 5; row++) {
+    for (
+        let row = 0;
+        row < 5;
+        row++
+    ) {
 
         let complete = true;
 
-        for (let col = 0; col < 5; col++) {
+
+        for (
+            let col = 0;
+            col < 5;
+            col++
+        ) {
 
             if (
                 !markedSet.has(
-                    String(card[row][col])
+                    String(
+                        card[row][col]
+                    )
                 )
             ) {
 
                 complete = false;
+
                 break;
 
             }
 
         }
 
-        if (complete) return true;
+
+        if (complete) {
+
+            return true;
+
+        }
 
     }
 
 
     // COLUMNS
 
-    for (let col = 0; col < 5; col++) {
+    for (
+        let col = 0;
+        col < 5;
+        col++
+    ) {
 
         let complete = true;
 
-        for (let row = 0; row < 5; row++) {
+
+        for (
+            let row = 0;
+            row < 5;
+            row++
+        ) {
 
             if (
                 !markedSet.has(
-                    String(card[row][col])
+                    String(
+                        card[row][col]
+                    )
                 )
             ) {
 
                 complete = false;
+
                 break;
 
             }
 
         }
 
-        if (complete) return true;
+
+        if (complete) {
+
+            return true;
+
+        }
 
     }
 
@@ -328,42 +468,64 @@ function hasBingo(card, marked) {
 
     let diagonal1 = true;
 
-    for (let i = 0; i < 5; i++) {
+
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
 
         if (
             !markedSet.has(
-                String(card[i][i])
+                String(
+                    card[i][i]
+                )
             )
         ) {
 
             diagonal1 = false;
+
             break;
 
         }
 
     }
 
-    if (diagonal1) return true;
+
+    if (diagonal1) {
+
+        return true;
+
+    }
 
 
     // DIAGONAL 2
 
     let diagonal2 = true;
 
-    for (let i = 0; i < 5; i++) {
+
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
 
         if (
             !markedSet.has(
-                String(card[i][4 - i])
+                String(
+                    card[i][4 - i]
+                )
             )
         ) {
 
             diagonal2 = false;
+
             break;
 
         }
 
     }
+
 
     return diagonal2;
 
@@ -377,10 +539,14 @@ function hasBingo(card, marked) {
 app.post("/api/claim", (req, res) => {
 
     const userId =
-        String(req.body.user_id || "");
+        String(
+            req.body.user_id || ""
+        );
+
 
     const player =
         game.players[userId];
+
 
     if (!player) {
 
@@ -388,11 +554,13 @@ app.post("/api/claim", (req, res) => {
 
             ok: false,
 
-            error: "Player not found"
+            error:
+                "Player not found"
 
         });
 
     }
+
 
     if (!game.running) {
 
@@ -400,11 +568,13 @@ app.post("/api/claim", (req, res) => {
 
             ok: false,
 
-            error: "Game is not running"
+            error:
+                "Game is not running"
 
         });
 
     }
+
 
     if (
         hasBingo(
@@ -414,12 +584,17 @@ app.post("/api/claim", (req, res) => {
     ) {
 
         if (
-            !game.winners.includes(userId)
+            !game.winners.includes(
+                userId
+            )
         ) {
 
-            game.winners.push(userId);
+            game.winners.push(
+                userId
+            );
 
         }
+
 
         return res.json({
 
@@ -427,11 +602,13 @@ app.post("/api/claim", (req, res) => {
 
             winner: true,
 
-            name: player.name
+            name:
+                player.name
 
         });
 
     }
+
 
     res.json({
 
@@ -439,7 +616,8 @@ app.post("/api/claim", (req, res) => {
 
         winner: false,
 
-        message: "No Bingo yet"
+        message:
+            "No Bingo yet"
 
     });
 
@@ -447,163 +625,206 @@ app.post("/api/claim", (req, res) => {
 
 
 // =========================
-// START GAME
+// ADMIN START
 // =========================
 
-app.post("/api/admin/start", (req, res) => {
+app.post(
+    "/api/admin/start",
+    (req, res) => {
 
-    if (!isAdmin(req)) {
+        if (!isAdmin(req)) {
 
-        return res.status(403).json({
+            return res.status(403).json({
 
-            ok: false,
+                ok: false,
 
-            error: "Admin access required"
+                error:
+                    "Admin access required"
+
+            });
+
+        }
+
+
+        game.running = true;
+
+        game.called = [];
+
+        game.players = {};
+
+        game.winners = [];
+
+
+        res.json({
+
+            ok: true,
+
+            message:
+                "Game started"
 
         });
 
     }
-
-    game.running = true;
-
-    game.called = [];
-
-    game.players = {};
-
-    game.winners = [];
-
-    res.json({
-
-        ok: true,
-
-        message: "Game started"
-
-    });
-
-});
+);
 
 
 // =========================
-// STOP GAME
+// ADMIN STOP
 // =========================
 
-app.post("/api/admin/stop", (req, res) => {
+app.post(
+    "/api/admin/stop",
+    (req, res) => {
 
-    if (!isAdmin(req)) {
+        if (!isAdmin(req)) {
 
-        return res.status(403).json({
+            return res.status(403).json({
 
-            ok: false,
+                ok: false,
 
-            error: "Admin access required"
+                error:
+                    "Admin access required"
+
+            });
+
+        }
+
+
+        game.running = false;
+
+
+        res.json({
+
+            ok: true,
+
+            message:
+                "Game stopped"
 
         });
 
     }
-
-    game.running = false;
-
-    res.json({
-
-        ok: true,
-
-        message: "Game stopped"
-
-    });
-
-});
+);
 
 
 // =========================
-// CALL NUMBER
+// ADMIN MANUAL CALL
 // =========================
 
-app.post("/api/admin/call", (req, res) => {
+app.post(
+    "/api/admin/call",
+    (req, res) => {
 
-    if (!isAdmin(req)) {
+        if (!isAdmin(req)) {
 
-        return res.status(403).json({
+            return res.status(403).json({
 
-            ok: false,
+                ok: false,
 
-            error: "Admin access required"
+                error:
+                    "Admin access required"
+
+            });
+
+        }
+
+
+        const number =
+            Number(req.body.number);
+
+
+        if (!game.running) {
+
+            return res.json({
+
+                ok: false,
+
+                error:
+                    "Game is not running"
+
+            });
+
+        }
+
+
+        if (
+            !Number.isInteger(number) ||
+            number < 1 ||
+            number > 75
+        ) {
+
+            return res.json({
+
+                ok: false,
+
+                error:
+                    "Number must be between 1 and 75"
+
+            });
+
+        }
+
+
+        if (
+            game.called.includes(
+                number
+            )
+        ) {
+
+            return res.json({
+
+                ok: false,
+
+                error:
+                    "Number already called"
+
+            });
+
+        }
+
+
+        game.called.push(number);
+
+
+        announceNumber(
+            number,
+            game.players
+        );
+
+
+        res.json({
+
+            ok: true,
+
+            number: number,
+
+            called:
+                game.called
 
         });
 
     }
+);
 
-    const number =
-        Number(req.body.number);
+
+// =========================
+// AUTOMATIC NUMBER
+// =========================
+
+async function autoCallNumber() {
 
     if (!game.running) {
 
-        return res.json({
-
-            ok: false,
-
-            error: "Game is not running"
-
-        });
+        return;
 
     }
+
 
     if (
-        !Number.isInteger(number) ||
-        number < 1 ||
-        number > 75
+        game.called.length >= 75
     ) {
 
-        return res.json({
-
-            ok: false,
-
-            error: "Number must be between 1 and 75"
-
-        });
-
-    }
-
-    if (game.called.includes(number)) {
-
-        return res.json({
-
-            ok: false,
-
-            error: "Number already called"
-
-        });
-
-    }
-
-    game.called.push(number);
-
-    res.json({
-
-        ok: true,
-
-        number: number,
-
-        called: game.called
-
-    });
-
-});
-
-
-// =========================
-// AUTO CALL NUMBER
-// =========================
-
-function autoCallNumber() {
-
-    if (!game.running) {
-        return;
-    }
-
-    if (game.called.length >= 75) {
-
         console.log(
-            "🎱 All numbers have been called"
+            "🎱 All numbers called"
         );
 
         game.running = false;
@@ -612,17 +833,26 @@ function autoCallNumber() {
 
     }
 
+
     const available = [];
 
-    for (let i = 1; i <= 75; i++) {
 
-        if (!game.called.includes(i)) {
+    for (
+        let i = 1;
+        i <= 75;
+        i++
+    ) {
+
+        if (
+            !game.called.includes(i)
+        ) {
 
             available.push(i);
 
         }
 
     }
+
 
     const number =
         available[
@@ -632,11 +862,21 @@ function autoCallNumber() {
             )
         ];
 
+
     game.called.push(number);
+
 
     console.log(
         "🎱 Auto called:",
         number
+    );
+
+
+    // Send Telegram announcement
+
+    await announceNumber(
+        number,
+        game.players
     );
 
 }
@@ -655,10 +895,13 @@ setInterval(() => {
 // START SERVER
 // =========================
 
-app.listen(PORT, () => {
+app.listen(
+    PORT,
+    () => {
 
-    console.log(
-        `🎯 Delina Bingo running on port ${PORT}`
-    );
+        console.log(
+            `🎯 Delina Bingo running on port ${PORT}`
+        );
 
-});
+    }
+);
