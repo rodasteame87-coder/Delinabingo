@@ -22,21 +22,28 @@ const bot = new TelegramBot(token, {
     }
 });
 
+
+// ==========================
+// START BOT
+// ==========================
+
 async function startBot() {
 
     try {
 
-        // Remove any old webhook
         await bot.deleteWebHook({
             drop_pending_updates: true
         });
 
-        console.log("✅ Old Telegram webhook removed");
+        console.log(
+            "✅ Old Telegram webhook removed"
+        );
 
-        // Start polling
         await bot.startPolling();
 
-        console.log("🤖 Delina Bingo bot is running");
+        console.log(
+            "🤖 Delina Bingo bot is running"
+        );
 
     } catch (error) {
 
@@ -49,35 +56,49 @@ async function startBot() {
 
 }
 
-// =========================
+
+// ==========================
 // START COMMAND
-// =========================
+// ==========================
 
 bot.onText(/\/start/, async (msg) => {
 
     const chatId = msg.chat.id;
 
     const keyboard = {
+
         inline_keyboard: [
+
             [
+
                 {
+
                     text: "🎯 Open Delina Bingo",
+
                     web_app: {
                         url: appUrl
                     }
+
                 }
+
             ]
+
         ]
+
     };
 
     try {
 
         await bot.sendMessage(
+
             chatId,
+
             "🎯 Welcome to Delina Bingo!\n\nTap the button below to enter the game.",
+
             {
                 reply_markup: keyboard
             }
+
         );
 
     } catch (error) {
@@ -91,17 +112,21 @@ bot.onText(/\/start/, async (msg) => {
 
 });
 
-// =========================
-// PING COMMAND
-// =========================
+
+// ==========================
+// PING
+// ==========================
 
 bot.onText(/\/ping/, async (msg) => {
 
     try {
 
         await bot.sendMessage(
+
             msg.chat.id,
+
             "🟢 Delina Bingo bot is working!"
+
         );
 
     } catch (error) {
@@ -115,9 +140,42 @@ bot.onText(/\/ping/, async (msg) => {
 
 });
 
-// =========================
-// BOT ERRORS
-// =========================
+
+// ==========================
+// ANNOUNCE NUMBER
+// ==========================
+
+async function announceNumber(number, players) {
+
+    for (const userId of Object.keys(players)) {
+
+        try {
+
+            await bot.sendMessage(
+
+                userId,
+
+                `🎱 NUMBER CALLED: ${number}\n\nCheck your Delina Bingo card!`
+
+            );
+
+        } catch (error) {
+
+            console.error(
+                `❌ Could not notify player ${userId}:`,
+                error.message
+            );
+
+        }
+
+    }
+
+}
+
+
+// ==========================
+// POLLING ERROR
+// ==========================
 
 bot.on("polling_error", (error) => {
 
@@ -129,8 +187,14 @@ bot.on("polling_error", (error) => {
 
 });
 
-// =========================
-// START
-// =========================
+
+// Start bot
 
 startBot();
+
+
+// Export announcement function
+
+module.exports = {
+    announceNumber
+};
