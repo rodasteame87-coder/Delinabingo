@@ -496,4 +496,172 @@ async function loadState() {
 }
 
 
-// =================
+// ===============================
+// CALLED NUMBERS
+// ===============================
+
+function updateCalledNumbers(numbers) {
+
+    const list =
+        document.getElementById("calledList");
+
+    list.innerHTML = "";
+
+    numbers.forEach(number => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "called-number";
+
+        item.textContent =
+            getLetter(number) + "-" + number;
+
+        list.appendChild(item);
+
+    });
+}
+
+
+// ===============================
+// BINGO LETTER
+// ===============================
+
+function getLetter(number) {
+
+    if (number >= 1 && number <= 15)
+        return "B";
+
+    if (number >= 16 && number <= 30)
+        return "I";
+
+    if (number >= 31 && number <= 45)
+        return "N";
+
+    if (number >= 46 && number <= 60)
+        return "G";
+
+    if (number >= 61 && number <= 75)
+        return "O";
+
+    return "";
+}
+
+
+// ===============================
+// HIGHLIGHT CALLED NUMBERS
+// ===============================
+
+function highlightCalledNumbers(numbers) {
+
+    const cells =
+        document.querySelectorAll(".cell");
+
+    cells.forEach(cell => {
+
+        const value =
+            parseInt(cell.textContent);
+
+        if (numbers.includes(value)) {
+
+            cell.classList.add("called-cell");
+
+        } else {
+
+            cell.classList.remove("called-cell");
+        }
+
+    });
+}
+
+
+// ===============================
+// CLAIM BINGO
+// ===============================
+
+async function claimBingo() {
+
+    const message =
+        document.getElementById("message");
+
+    message.textContent =
+        "Checking your card...";
+
+
+    try {
+
+        const response =
+            await fetch("/api/bingo", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    card: myCard,
+
+                    marked:
+                        Array.from(marked),
+
+                    user_id:
+                        tg.initDataUnsafe?.user?.id || null
+
+                })
+
+            });
+
+
+        const data =
+            await response.json();
+
+
+        if (data.success) {
+
+            message.textContent =
+                "🎉 BINGO! You won!";
+
+            message.className =
+                "winner";
+
+        } else {
+
+            message.textContent =
+                data.message ||
+                "❌ Bingo not valid.";
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        message.textContent =
+            "⚠️ Could not contact server.";
+    }
+}
+
+
+// ===============================
+// START
+// ===============================
+
+createCard();
+
+loadState();
+
+
+// Update every 2 seconds
+
+setInterval(loadState, 2000);
+
+</script>
+
+</body>
+</html>
