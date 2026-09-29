@@ -72,13 +72,11 @@ bot.onText(/\/start/, async (msg) => {
             [
 
                 {
-
                     text: "🎯 Open Delina Bingo",
 
                     web_app: {
                         url: appUrl
                     }
-
                 }
 
             ]
@@ -122,11 +120,8 @@ bot.onText(/\/ping/, async (msg) => {
     try {
 
         await bot.sendMessage(
-
             msg.chat.id,
-
             "🟢 Delina Bingo bot is working!"
-
         );
 
     } catch (error) {
@@ -142,12 +137,17 @@ bot.onText(/\/ping/, async (msg) => {
 
 
 // ==========================
-// ANNOUNCE NUMBER
+// NUMBER ANNOUNCEMENT
 // ==========================
 
-async function announceNumber(number, players) {
+async function announceNumber(
+    number,
+    players
+) {
 
-    for (const userId of Object.keys(players)) {
+    for (
+        const userId of Object.keys(players)
+    ) {
 
         try {
 
@@ -174,18 +174,58 @@ async function announceNumber(number, players) {
 
 
 // ==========================
+// WINNER ANNOUNCEMENT
+// ==========================
+
+async function announceWinner(
+    winnerName,
+    players
+) {
+
+    for (
+        const userId of Object.keys(players)
+    ) {
+
+        try {
+
+            await bot.sendMessage(
+
+                userId,
+
+                `🏆 BINGO!\n\n🎉 ${winnerName} has won the game!\n\n🔴 The game has ended.`
+
+            );
+
+        } catch (error) {
+
+            console.error(
+                `❌ Could not notify player ${userId}:`,
+                error.message
+            );
+
+        }
+
+    }
+
+}
+
+
+// ==========================
 // POLLING ERROR
 // ==========================
 
-bot.on("polling_error", (error) => {
+bot.on(
+    "polling_error",
+    (error) => {
 
-    console.error(
-        "⚠️ Telegram polling error:",
-        error.code,
-        error.message
-    );
+        console.error(
+            "⚠️ Telegram polling error:",
+            error.code,
+            error.message
+        );
 
-});
+    }
+);
 
 
 // Start bot
@@ -193,8 +233,9 @@ bot.on("polling_error", (error) => {
 startBot();
 
 
-// Export announcement function
+// Export functions
 
 module.exports = {
-    announceNumber
+    announceNumber,
+    announceWinner
 };
