@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    >
+
     <title>Delina Bingo</title>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -14,7 +18,7 @@
 
         body {
             margin: 0;
-            padding: 20px 15px;
+            padding: 18px 12px 30px;
             background: #10141c;
             color: white;
             font-family: Arial, sans-serif;
@@ -23,7 +27,16 @@
 
         h1 {
             margin: 5px 0 18px;
-            font-size: 30px;
+            font-size: 29px;
+        }
+
+        .status {
+            max-width: 430px;
+            margin: 0 auto 15px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #1d2633;
+            font-weight: bold;
         }
 
         .letters,
@@ -43,7 +56,7 @@
 
         .letter {
             background: #293446;
-            padding: 12px 5px;
+            padding: 11px 5px;
             border-radius: 9px;
             font-size: 21px;
             font-weight: bold;
@@ -62,40 +75,49 @@
             justify-content: center;
             background: #202938;
             border-radius: 10px;
-            font-size: 19px;
+            font-size: 18px;
             font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .cell.marked {
+            background: #20a463;
+            transform: scale(0.96);
         }
 
         .free {
             background: #7657d9;
+            cursor: default;
         }
 
         .last {
-            margin-top: 22px;
+            max-width: 430px;
+            margin: 20px auto 0;
             background: #1d2633;
-            padding: 15px;
+            padding: 14px;
             border-radius: 14px;
         }
 
         .last-title {
-            font-size: 16px;
+            font-size: 15px;
             color: #b9c0cc;
         }
 
         #lastNumber {
-            font-size: 45px;
+            font-size: 42px;
             font-weight: bold;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         .live {
-            margin-top: 15px;
+            margin-top: 14px;
             font-size: 18px;
             font-weight: bold;
         }
 
         .bingo-button {
-            margin-top: 18px;
+            margin-top: 17px;
             width: 100%;
             max-width: 430px;
             padding: 16px;
@@ -106,12 +128,27 @@
             font-size: 20px;
             font-weight: bold;
         }
+
+        .bingo-button:active {
+            transform: scale(0.98);
+        }
+
+        #message {
+            max-width: 430px;
+            margin: 13px auto 0;
+            min-height: 20px;
+            color: #b9c0cc;
+        }
     </style>
 </head>
 
 <body>
 
     <h1>🎯 DELINA BINGO</h1>
+
+    <div class="status" id="status">
+        Connecting...
+    </div>
 
     <div class="letters">
         <div class="letter">B</div>
@@ -121,39 +158,7 @@
         <div class="letter">O</div>
     </div>
 
-    <div class="card">
-
-        <div class="cell">12</div>
-        <div class="cell">19</div>
-        <div class="cell">33</div>
-        <div class="cell">52</div>
-        <div class="cell">71</div>
-
-        <div class="cell">4</div>
-        <div class="cell">27</div>
-        <div class="cell">41</div>
-        <div class="cell">48</div>
-        <div class="cell">65</div>
-
-        <div class="cell">10</div>
-        <div class="cell">21</div>
-        <div class="cell free">FREE</div>
-        <div class="cell">55</div>
-        <div class="cell">73</div>
-
-        <div class="cell">8</div>
-        <div class="cell">30</div>
-        <div class="cell">38</div>
-        <div class="cell">47</div>
-        <div class="cell">68</div>
-
-        <div class="cell">15</div>
-        <div class="cell">17</div>
-        <div class="cell">44</div>
-        <div class="cell">59</div>
-        <div class="cell">62</div>
-
-    </div>
+    <div class="card" id="card"></div>
 
     <div class="last">
         <div class="last-title">
@@ -161,24 +166,199 @@
         </div>
 
         <div id="lastNumber">
-            33
+            —
         </div>
     </div>
 
-    <div class="live">
-        🟢 GAME LIVE
+    <div class="live" id="live">
+        🔴 GAME STOPPED
     </div>
 
-    <button class="bingo-button">
+    <button class="bingo-button" onclick="claimBingo()">
         🏆 BINGO!
     </button>
 
-    <script>
-        const tg = window.Telegram.WebApp;
+    <div id="message"></div>
 
-        tg.ready();
-        tg.expand();
-    </script>
+<script>
 
-</body>
-</html>
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+let userId = "";
+let playerName = "";
+let playerCard = [];
+let marked = [];
+let gameState = {};
+
+// ==========================
+// TELEGRAM USER
+// ==========================
+
+if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+
+    userId = String(tg.initDataUnsafe.user.id);
+
+    playerName =
+        tg.initDataUnsafe.user.first_name ||
+        "Player";
+
+} else {
+
+    // For testing outside Telegram
+    userId = "test-" + Date.now();
+
+    playerName = "Test Player";
+}
+
+// ==========================
+// JOIN GAME
+// ==========================
+
+async function joinGame() {
+
+    try {
+
+        const response = await fetch("/api/join", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                user_id: userId,
+
+                name: playerName
+
+            })
+
+        });
+
+        const data = await response.json();
+
+        if (!data.ok) {
+
+            showMessage(data.error || "Could not join game");
+
+            return;
+
+        }
+
+        playerCard = data.card;
+        marked = data.marked || [];
+
+        drawCard();
+
+        await updateState();
+
+    } catch (error) {
+
+        showMessage("Connection error");
+
+        console.error(error);
+
+    }
+}
+
+// ==========================
+// DRAW CARD
+// ==========================
+
+function drawCard() {
+
+    const cardElement =
+        document.getElementById("card");
+
+    cardElement.innerHTML = "";
+
+    for (let row = 0; row < 5; row++) {
+
+        for (let col = 0; col < 5; col++) {
+
+            const value =
+                playerCard[row][col];
+
+            const cell =
+                document.createElement("div");
+
+            cell.className = "cell";
+
+            if (value === "FREE") {
+
+                cell.classList.add("free");
+                cell.classList.add("marked");
+
+            } else {
+
+                cell.onclick = () => markNumber(value);
+
+            }
+
+            if (
+                marked.map(String)
+                    .includes(String(value))
+            ) {
+
+                cell.classList.add("marked");
+
+            }
+
+            cell.textContent = value;
+
+            cardElement.appendChild(cell);
+        }
+    }
+}
+
+// ==========================
+// MARK NUMBER
+// ==========================
+
+async function markNumber(number) {
+
+    if (!gameState.running) {
+
+        showMessage("🔴 Game is not running");
+
+        return;
+    }
+
+    if (
+        marked.map(String)
+            .includes(String(number))
+    ) {
+
+        return;
+
+    }
+
+    try {
+
+        const response = await fetch("/api/mark", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+
+                user_id: userId,
+
+                number: number
+
+            })
+
+        });
+
+        const data = await response.json();
+
+        if (data.ok) {
+
+           
