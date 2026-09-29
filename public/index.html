@@ -1,15 +1,184 @@
-        DELINA BINGO
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delina Bingo</title>
 
-       B    I    N    G    O
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-      12   19   33   52   71
-       4   27   41   48   65
-      10   21  FREE  55   73
-       8   30   38   47   68
-      15   17   44   59   62
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-       Last called: 33
+        body {
+            margin: 0;
+            padding: 20px 15px;
+            background: #10141c;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
 
-       🟢 GAME LIVE
+        h1 {
+            margin: 5px 0 18px;
+            font-size: 30px;
+        }
 
-          BINGO!
+        .letters,
+        .card {
+            width: 100%;
+            max-width: 430px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .letters {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 7px;
+            margin-bottom: 7px;
+        }
+
+        .letter {
+            background: #293446;
+            padding: 12px 5px;
+            border-radius: 9px;
+            font-size: 21px;
+            font-weight: bold;
+        }
+
+        .card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 7px;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #202938;
+            border-radius: 10px;
+            font-size: 19px;
+            font-weight: bold;
+        }
+
+        .free {
+            background: #7657d9;
+        }
+
+        .last {
+            margin-top: 22px;
+            background: #1d2633;
+            padding: 15px;
+            border-radius: 14px;
+        }
+
+        .last-title {
+            font-size: 16px;
+            color: #b9c0cc;
+        }
+
+        #lastNumber {
+            font-size: 45px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .live {
+            margin-top: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .bingo-button {
+            margin-top: 18px;
+            width: 100%;
+            max-width: 430px;
+            padding: 16px;
+            border: none;
+            border-radius: 13px;
+            background: #20a463;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎯 DELINA BINGO</h1>
+
+    <div class="letters">
+        <div class="letter">B</div>
+        <div class="letter">I</div>
+        <div class="letter">N</div>
+        <div class="letter">G</div>
+        <div class="letter">O</div>
+    </div>
+
+    <div class="card">
+
+        <div class="cell">12</div>
+        <div class="cell">19</div>
+        <div class="cell">33</div>
+        <div class="cell">52</div>
+        <div class="cell">71</div>
+
+        <div class="cell">4</div>
+        <div class="cell">27</div>
+        <div class="cell">41</div>
+        <div class="cell">48</div>
+        <div class="cell">65</div>
+
+        <div class="cell">10</div>
+        <div class="cell">21</div>
+        <div class="cell free">FREE</div>
+        <div class="cell">55</div>
+        <div class="cell">73</div>
+
+        <div class="cell">8</div>
+        <div class="cell">30</div>
+        <div class="cell">38</div>
+        <div class="cell">47</div>
+        <div class="cell">68</div>
+
+        <div class="cell">15</div>
+        <div class="cell">17</div>
+        <div class="cell">44</div>
+        <div class="cell">59</div>
+        <div class="cell">62</div>
+
+    </div>
+
+    <div class="last">
+        <div class="last-title">
+            Last called:
+        </div>
+
+        <div id="lastNumber">
+            33
+        </div>
+    </div>
+
+    <div class="live">
+        🟢 GAME LIVE
+    </div>
+
+    <button class="bingo-button">
+        🏆 BINGO!
+    </button>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+
+        tg.ready();
+        tg.expand();
+    </script>
+
+</body>
+</html>
