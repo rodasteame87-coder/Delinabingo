@@ -6,24 +6,507 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-
-// Serve the Mini App from the public folder
 app.use(express.static(path.join(__dirname, "public")));
 
-// Main Mini App
+// =========================
+// GAME
+// =========================
+
+const game = {
+    running: false,
+    called: [],
+    players: {},
+    winners: []
+};
+
+// =========================
+// CREATE BINGO CARD
+// =========================
+
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
+
+function pickNumbers(start, end) {
+    const numbers = [];
+
+    for (let i = start; i <= end; i++) {
+        numbers.push(i);
+    }
+
+    return shuffle(numbers).slice(0, 5);
+}
+
+function createCard() {
+
+    const B = pickNumbers(1, 15);
+    const I = pickNumbers(16, 30);
+    const N = pickNumbers(31, 45);
+    const G = pickNumbers(46, 60);
+    const O = pickNumbers(61, 75);
+
+    const card = [];
+
+    for (let row = 0; row < 5; row++) {
+
+        card.push([
+            B[row],
+            I[row],
+            N[row],
+            G[row],
+            O[row]
+        ]);
+    }
+
+    card[2][2] = "FREE";
+
+    return card;
+}
+
+// =========================
+// HOME
+// =========================
+
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+
+    res.sendFile(
+        path.join(__dirname, "public", "index.html")
+    );
+
 });
 
-// Health check
+// =========================
+// HEALTH
+// =========================
+
 app.get("/health", (req, res) => {
+
     res.json({
         ok: true,
         message: "Delina Bingo is online"
     });
+
 });
 
-// Start server
+// =========================
+// GAME STATE
+// =========================
+
+app.get("/api/state", (req, res) => {
+
+    res.json({
+
+        running: game.running,
+
+        called: game.called,
+
+        players: Object.keys(game.players).length,
+
+        winners: game.winners
+
+    });
+
+});
+
+// =========================
+// JOIN GAME
+// =========================
+
+app.post("/api/join", (req, res) => {
+
+    const userId = String(req.body.user_id || "");
+
+    const name =
+        String(req.body.name || "Player");
+
+    if (!userId) {
+
+        return res.status(400).json({
+
+            ok: false,
+
+            error: "User ID missing"
+
+        });
+
+    }
+
+    if (!game.players[userId]) {
+
+        game.players[userId] = {
+
+            name: name,
+
+            card: createCard(),
+
+            marked: ["FREE"]
+
+        };
+
+    }
+
+    const player =
+        game.players[userId];
+
+    res.json({
+
+        ok: true,
+
+        name: player.name,
+
+        card: player.card,
+
+        marked: player.marked
+
+    });
+
+});
+
+// =========================
+// MARK NUMBER
+// =========================
+
+app.post("/api/mark", (req, res) => {
+
+    const userId =
+        String(req.body.user_id || "");
+
+    const number =
+        req.body.number;
+
+    const player =
+        game.players[userId];
+
+    if (!player) {
+
+        return res.status(404).json({
+
+            ok: false,
+
+            error: "Player not found"
+
+        });
+
+    }
+
+    if (number !== "FREE") {
+
+        const num = Number(number);
+
+        if (!game.called.includes(num)) {
+
+            return res.json({
+
+                ok: false,
+
+                error: "Number has not been called"
+
+            });
+
+        }
+
+    }
+
+    if (!player.marked.includes(number)) {
+
+        player.marked.push(number);
+
+    }
+
+    res.json({
+
+        ok: true,
+
+        marked: player.marked
+
+    });
+
+});
+
+// =========================
+// BINGO CHECK
+// =========================
+
+function hasBingo(card, marked) {
+
+    const markedSet =
+        new Set(marked.map(String));
+
+    // Rows
+
+    for (let row = 0; row < 5; row++) {
+
+        let complete = true;
+
+        for (let col = 0; col < 5; col++) {
+
+            if (
+                !markedSet.has(
+                    String(card[row][col])
+                )
+            ) {
+
+                complete = false;
+
+                break;
+            }
+        }
+
+        if (complete) return true;
+    }
+
+    // Columns
+
+    for (let col = 0; col < 5; col++) {
+
+        let complete = true;
+
+        for (let row = 0; row < 5; row++) {
+
+            if (
+                !markedSet.has(
+                    String(card[row][col])
+                )
+            ) {
+
+                complete = false;
+
+                break;
+            }
+        }
+
+        if (complete) return true;
+    }
+
+    // Diagonal 1
+
+    let diagonal1 = true;
+
+    for (let i = 0; i < 5; i++) {
+
+        if (
+            !markedSet.has(
+                String(card[i][i])
+            )
+        ) {
+
+            diagonal1 = false;
+
+            break;
+        }
+    }
+
+    if (diagonal1) return true;
+
+    // Diagonal 2
+
+    let diagonal2 = true;
+
+    for (let i = 0; i < 5; i++) {
+
+        if (
+            !markedSet.has(
+                String(card[i][4 - i])
+            )
+        ) {
+
+            diagonal2 = false;
+
+            break;
+        }
+    }
+
+    return diagonal2;
+}
+
+// =========================
+// CLAIM BINGO
+// =========================
+
+app.post("/api/claim", (req, res) => {
+
+    const userId =
+        String(req.body.user_id || "");
+
+    const player =
+        game.players[userId];
+
+    if (!player) {
+
+        return res.json({
+
+            ok: false,
+
+            error: "Player not found"
+
+        });
+
+    }
+
+    if (!game.running) {
+
+        return res.json({
+
+            ok: false,
+
+            error: "Game is not running"
+
+        });
+
+    }
+
+    if (
+        hasBingo(
+            player.card,
+            player.marked
+        )
+    ) {
+
+        if (
+            !game.winners.includes(userId)
+        ) {
+
+            game.winners.push(userId);
+
+        }
+
+        return res.json({
+
+            ok: true,
+
+            winner: true,
+
+            name: player.name
+
+        });
+
+    }
+
+    res.json({
+
+        ok: true,
+
+        winner: false,
+
+        message: "No Bingo yet"
+
+    });
+
+});
+
+// =========================
+// ADMIN START
+// =========================
+
+app.post("/api/admin/start", (req, res) => {
+
+    game.running = true;
+
+    game.called = [];
+
+    game.players = {};
+
+    game.winners = [];
+
+    res.json({
+
+        ok: true,
+
+        message: "Game started"
+
+    });
+
+});
+
+// =========================
+// ADMIN STOP
+// =========================
+
+app.post("/api/admin/stop", (req, res) => {
+
+    game.running = false;
+
+    res.json({
+
+        ok: true,
+
+        message: "Game stopped"
+
+    });
+
+});
+
+// =========================
+// ADMIN CALL NUMBER
+// =========================
+
+app.post("/api/admin/call", (req, res) => {
+
+    const number =
+        Number(req.body.number);
+
+    if (!game.running) {
+
+        return res.json({
+
+            ok: false,
+
+            error: "Game is not running"
+
+        });
+
+    }
+
+    if (
+        !Number.isInteger(number) ||
+        number < 1 ||
+        number > 75
+    ) {
+
+        return res.json({
+
+            ok: false,
+
+            error: "Number must be between 1 and 75"
+
+        });
+
+    }
+
+    if (game.called.includes(number)) {
+
+        return res.json({
+
+            ok: false,
+
+            error: "Number already called"
+
+        });
+
+    }
+
+    game.called.push(number);
+
+    res.json({
+
+        ok: true,
+
+        number: number,
+
+        called: game.called
+
+    });
+
+});
+
+// =========================
+// START SERVER
+// =========================
+
 app.listen(PORT, () => {
-    console.log(`🎯 Delina Bingo running on port ${PORT}`);
+
+    console.log(
+        `🎯 Delina Bingo running on port ${PORT}`
+    );
+
 });
