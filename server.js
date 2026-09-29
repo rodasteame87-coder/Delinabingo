@@ -9,7 +9,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // =========================
-// GAME
+// GAME DATA
 // =========================
 
 const game = {
@@ -20,7 +20,7 @@ const game = {
 };
 
 // =========================
-// CREATE BINGO CARD
+// BINGO CARD
 // =========================
 
 function shuffle(array) {
@@ -56,11 +56,27 @@ function createCard() {
             G[row],
             O[row]
         ]);
+
     }
 
     card[2][2] = "FREE";
 
     return card;
+}
+
+// =========================
+// ADMIN SECURITY
+// =========================
+
+function isAdmin(req) {
+
+    const userId =
+        String(req.body.user_id || "");
+
+    const adminId =
+        String(process.env.ADMIN_ID || "");
+
+    return userId === adminId;
 }
 
 // =========================
@@ -100,7 +116,8 @@ app.get("/api/state", (req, res) => {
 
         called: game.called,
 
-        players: Object.keys(game.players).length,
+        players:
+            Object.keys(game.players).length,
 
         winners: game.winners
 
@@ -114,7 +131,8 @@ app.get("/api/state", (req, res) => {
 
 app.post("/api/join", (req, res) => {
 
-    const userId = String(req.body.user_id || "");
+    const userId =
+        String(req.body.user_id || "");
 
     const name =
         String(req.body.name || "Player");
@@ -232,7 +250,7 @@ function hasBingo(card, marked) {
     const markedSet =
         new Set(marked.map(String));
 
-    // Rows
+    // ROWS
 
     for (let row = 0; row < 5; row++) {
 
@@ -249,13 +267,16 @@ function hasBingo(card, marked) {
                 complete = false;
 
                 break;
+
             }
+
         }
 
         if (complete) return true;
+
     }
 
-    // Columns
+    // COLUMNS
 
     for (let col = 0; col < 5; col++) {
 
@@ -272,13 +293,16 @@ function hasBingo(card, marked) {
                 complete = false;
 
                 break;
+
             }
+
         }
 
         if (complete) return true;
+
     }
 
-    // Diagonal 1
+    // DIAGONAL 1
 
     let diagonal1 = true;
 
@@ -293,12 +317,14 @@ function hasBingo(card, marked) {
             diagonal1 = false;
 
             break;
+
         }
+
     }
 
     if (diagonal1) return true;
 
-    // Diagonal 2
+    // DIAGONAL 2
 
     let diagonal2 = true;
 
@@ -313,7 +339,9 @@ function hasBingo(card, marked) {
             diagonal2 = false;
 
             break;
+
         }
+
     }
 
     return diagonal2;
@@ -400,6 +428,18 @@ app.post("/api/claim", (req, res) => {
 
 app.post("/api/admin/start", (req, res) => {
 
+    if (!isAdmin(req)) {
+
+        return res.status(403).json({
+
+            ok: false,
+
+            error: "Admin access required"
+
+        });
+
+    }
+
     game.running = true;
 
     game.called = [];
@@ -424,6 +464,18 @@ app.post("/api/admin/start", (req, res) => {
 
 app.post("/api/admin/stop", (req, res) => {
 
+    if (!isAdmin(req)) {
+
+        return res.status(403).json({
+
+            ok: false,
+
+            error: "Admin access required"
+
+        });
+
+    }
+
     game.running = false;
 
     res.json({
@@ -441,6 +493,18 @@ app.post("/api/admin/stop", (req, res) => {
 // =========================
 
 app.post("/api/admin/call", (req, res) => {
+
+    if (!isAdmin(req)) {
+
+        return res.status(403).json({
+
+            ok: false,
+
+            error: "Admin access required"
+
+        });
+
+    }
 
     const number =
         Number(req.body.number);
