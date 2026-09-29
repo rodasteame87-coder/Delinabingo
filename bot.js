@@ -4,23 +4,37 @@ const token = process.env.BOT_TOKEN;
 const appUrl = process.env.APP_URL;
 
 if (!token) {
-    console.error("❌ BOT_TOKEN is missing");
+
+    console.error(
+        "❌ BOT_TOKEN is missing"
+    );
+
     process.exit(1);
+
 }
 
 if (!appUrl) {
-    console.error("❌ APP_URL is missing");
+
+    console.error(
+        "❌ APP_URL is missing"
+    );
+
     process.exit(1);
+
 }
 
-const bot = new TelegramBot(token, {
-    polling: {
-        autoStart: false,
-        params: {
-            timeout: 30
+
+const bot = new TelegramBot(
+    token,
+    {
+        polling: {
+            autoStart: false,
+            params: {
+                timeout: 30
+            }
         }
     }
-});
+);
 
 
 // ==========================
@@ -61,79 +75,97 @@ async function startBot() {
 // START COMMAND
 // ==========================
 
-bot.onText(/\/start/, async (msg) => {
+bot.onText(
+    /\/start/,
+    async (msg) => {
 
-    const chatId = msg.chat.id;
+        const chatId =
+            msg.chat.id;
 
-    const keyboard = {
+        const keyboard = {
 
-        inline_keyboard: [
+            inline_keyboard: [
 
-            [
+                [
 
-                {
-                    text: "🎯 Open Delina Bingo",
+                    {
 
-                    web_app: {
-                        url: appUrl
+                        text:
+                            "🎯 Open Delina Bingo",
+
+                        web_app: {
+
+                            url:
+                                appUrl +
+                                "?v=3"
+
+                        }
+
                     }
-                }
+
+                ]
 
             ]
 
-        ]
+        };
 
-    };
+        try {
 
-    try {
+            await bot.sendMessage(
 
-        await bot.sendMessage(
+                chatId,
 
-            chatId,
+                "🎯 Welcome to Delina Bingo!\n\nTap the button below to enter the game.",
 
-            "🎯 Welcome to Delina Bingo!\n\nTap the button below to enter the game.",
+                {
+                    reply_markup:
+                        keyboard
+                }
 
-            {
-                reply_markup: keyboard
-            }
+            );
 
-        );
+        } catch (error) {
 
-    } catch (error) {
+            console.error(
+                "❌ Could not send message:",
+                error.message
+            );
 
-        console.error(
-            "❌ Could not send message:",
-            error.message
-        );
+        }
 
     }
-
-});
+);
 
 
 // ==========================
 // PING
 // ==========================
 
-bot.onText(/\/ping/, async (msg) => {
+bot.onText(
+    /\/ping/,
+    async (msg) => {
 
-    try {
+        try {
 
-        await bot.sendMessage(
-            msg.chat.id,
-            "🟢 Delina Bingo bot is working!"
-        );
+            await bot.sendMessage(
 
-    } catch (error) {
+                msg.chat.id,
 
-        console.error(
-            "❌ Ping error:",
-            error.message
-        );
+                "🟢 Delina Bingo bot is working!"
+
+            );
+
+        } catch (error) {
+
+            console.error(
+                "❌ Ping error:",
+                error.message
+            );
+
+        }
 
     }
-
-});
+);
 
 
 // ==========================
@@ -146,7 +178,8 @@ async function announceNumber(
 ) {
 
     for (
-        const userId of Object.keys(players)
+        const userId of
+        Object.keys(players)
     ) {
 
         try {
@@ -162,8 +195,11 @@ async function announceNumber(
         } catch (error) {
 
             console.error(
+
                 `❌ Could not notify player ${userId}:`,
+
                 error.message
+
             );
 
         }
@@ -183,7 +219,8 @@ async function announceWinner(
 ) {
 
     for (
-        const userId of Object.keys(players)
+        const userId of
+        Object.keys(players)
     ) {
 
         try {
@@ -199,8 +236,11 @@ async function announceWinner(
         } catch (error) {
 
             console.error(
+
                 `❌ Could not notify player ${userId}:`,
+
                 error.message
+
             );
 
         }
@@ -219,23 +259,29 @@ bot.on(
     (error) => {
 
         console.error(
+
             "⚠️ Telegram polling error:",
+
             error.code,
+
             error.message
+
         );
 
     }
 );
 
 
-// Start bot
-
-startBot();
-
-
-// Export functions
+// ==========================
+// EXPORT
+// ==========================
 
 module.exports = {
+
+    startBot,
+
     announceNumber,
+
     announceWinner
+
 };
