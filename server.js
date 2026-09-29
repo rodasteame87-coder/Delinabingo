@@ -1,13 +1,27 @@
 const express = require("express");
 const path = require("path");
 
-const { announceNumber, announceWinner } = require("./bot");
+const {
+    announceNumber,
+    announceWinner,
+    startBot
+} = require("./bot");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+
+app.use(
+    express.static(
+        path.join(__dirname, "public")
+    )
+);
+
+
+// =========================
+// GAME DATA
+// =========================
 
 const game = {
     running: false,
@@ -22,20 +36,35 @@ const game = {
 // =========================
 
 function shuffle(array) {
-    return array.sort(() => Math.random() - 0.5);
+
+    return array.sort(
+        () => Math.random() - 0.5
+    );
+
 }
 
+
 function pickNumbers(start, end) {
+
     const numbers = [];
 
-    for (let i = start; i <= end; i++) {
+    for (
+        let i = start;
+        i <= end;
+        i++
+    ) {
+
         numbers.push(i);
+
     }
 
     return shuffle(numbers).slice(0, 5);
+
 }
 
+
 function createCard() {
+
     const B = pickNumbers(1, 15);
     const I = pickNumbers(16, 30);
     const N = pickNumbers(31, 45);
@@ -44,7 +73,12 @@ function createCard() {
 
     const card = [];
 
-    for (let row = 0; row < 5; row++) {
+    for (
+        let row = 0;
+        row < 5;
+        row++
+    ) {
+
         card.push([
             B[row],
             I[row],
@@ -52,11 +86,13 @@ function createCard() {
             G[row],
             O[row]
         ]);
+
     }
 
     card[2][2] = "FREE";
 
     return card;
+
 }
 
 
@@ -65,10 +101,17 @@ function createCard() {
 // =========================
 
 function isAdmin(req) {
-    const userId = String(req.body.user_id || "");
-    const adminId = String(process.env.ADMIN_ID || "");
+
+    const userId =
+        String(req.body.user_id || "");
+
+    const adminId =
+        String(
+            process.env.ADMIN_ID || ""
+        );
 
     return userId === adminId;
+
 }
 
 
@@ -77,9 +120,15 @@ function isAdmin(req) {
 // =========================
 
 app.get("/", (req, res) => {
+
     res.sendFile(
-        path.join(__dirname, "public", "index.html")
+        path.join(
+            __dirname,
+            "public",
+            "index.html"
+        )
     );
+
 });
 
 
@@ -88,10 +137,12 @@ app.get("/", (req, res) => {
 // =========================
 
 app.get("/health", (req, res) => {
+
     res.json({
         ok: true,
         message: "Delina Bingo is online"
     });
+
 });
 
 
@@ -100,12 +151,25 @@ app.get("/health", (req, res) => {
 // =========================
 
 app.get("/api/state", (req, res) => {
+
     res.json({
-        running: game.running,
-        called: game.called,
-        players: Object.keys(game.players).length,
-        winners: game.winners
+
+        running:
+            game.running,
+
+        called:
+            game.called,
+
+        players:
+            Object.keys(
+                game.players
+            ).length,
+
+        winners:
+            game.winners
+
     });
+
 });
 
 
@@ -114,32 +178,64 @@ app.get("/api/state", (req, res) => {
 // =========================
 
 app.post("/api/join", (req, res) => {
-    const userId = String(req.body.user_id || "");
-    const name = String(req.body.name || "Player");
+
+    const userId =
+        String(
+            req.body.user_id || ""
+        );
+
+    const name =
+        String(
+            req.body.name || "Player"
+        );
 
     if (!userId) {
+
         return res.status(400).json({
+
             ok: false,
-            error: "User ID missing"
+
+            error:
+                "User ID missing"
+
         });
+
     }
 
     if (!game.players[userId]) {
+
         game.players[userId] = {
+
             name: name,
-            card: createCard(),
-            marked: ["FREE"]
+
+            card:
+                createCard(),
+
+            marked:
+                ["FREE"]
+
         };
+
     }
 
-    const player = game.players[userId];
+    const player =
+        game.players[userId];
 
     res.json({
+
         ok: true,
-        name: player.name,
-        card: player.card,
-        marked: player.marked
+
+        name:
+            player.name,
+
+        card:
+            player.card,
+
+        marked:
+            player.marked
+
     });
+
 });
 
 
@@ -148,44 +244,83 @@ app.post("/api/join", (req, res) => {
 // =========================
 
 app.post("/api/mark", (req, res) => {
-    const userId = String(req.body.user_id || "");
-    const number = req.body.number;
 
-    const player = game.players[userId];
+    const userId =
+        String(
+            req.body.user_id || ""
+        );
+
+    const number =
+        req.body.number;
+
+    const player =
+        game.players[userId];
 
     if (!player) {
+
         return res.status(404).json({
+
             ok: false,
-            error: "Player not found"
+
+            error:
+                "Player not found"
+
         });
+
     }
 
     if (!game.running) {
+
         return res.json({
+
             ok: false,
-            error: "Game is not running"
+
+            error:
+                "Game is not running"
+
         });
+
     }
 
     if (number !== "FREE") {
-        const num = Number(number);
 
-        if (!game.called.includes(num)) {
+        const num =
+            Number(number);
+
+        if (
+            !game.called.includes(num)
+        ) {
+
             return res.json({
+
                 ok: false,
-                error: "Number has not been called"
+
+                error:
+                    "Number has not been called"
+
             });
+
         }
+
     }
 
-    if (!player.marked.includes(number)) {
+    if (
+        !player.marked.includes(number)
+    ) {
+
         player.marked.push(number);
+
     }
 
     res.json({
+
         ok: true,
-        marked: player.marked
+
+        marked:
+            player.marked
+
     });
+
 });
 
 
@@ -194,65 +329,154 @@ app.post("/api/mark", (req, res) => {
 // =========================
 
 function hasBingo(card, marked) {
-    const markedSet = new Set(marked.map(String));
+
+    const markedSet =
+        new Set(
+            marked.map(String)
+        );
+
 
     // ROWS
-    for (let row = 0; row < 5; row++) {
+
+    for (
+        let row = 0;
+        row < 5;
+        row++
+    ) {
+
         let complete = true;
 
-        for (let col = 0; col < 5; col++) {
-            if (!markedSet.has(String(card[row][col]))) {
+        for (
+            let col = 0;
+            col < 5;
+            col++
+        ) {
+
+            if (
+                !markedSet.has(
+                    String(
+                        card[row][col]
+                    )
+                )
+            ) {
+
                 complete = false;
+
                 break;
+
             }
+
         }
 
         if (complete) {
+
             return true;
+
         }
+
     }
+
 
     // COLUMNS
-    for (let col = 0; col < 5; col++) {
+
+    for (
+        let col = 0;
+        col < 5;
+        col++
+    ) {
+
         let complete = true;
 
-        for (let row = 0; row < 5; row++) {
-            if (!markedSet.has(String(card[row][col]))) {
+        for (
+            let row = 0;
+            row < 5;
+            row++
+        ) {
+
+            if (
+                !markedSet.has(
+                    String(
+                        card[row][col]
+                    )
+                )
+            ) {
+
                 complete = false;
+
                 break;
+
             }
+
         }
 
         if (complete) {
+
             return true;
+
         }
+
     }
 
+
     // DIAGONAL 1
+
     let diagonal1 = true;
 
-    for (let i = 0; i < 5; i++) {
-        if (!markedSet.has(String(card[i][i]))) {
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
+
+        if (
+            !markedSet.has(
+                String(card[i][i])
+            )
+        ) {
+
             diagonal1 = false;
+
             break;
+
         }
+
     }
 
     if (diagonal1) {
+
         return true;
+
     }
 
+
     // DIAGONAL 2
+
     let diagonal2 = true;
 
-    for (let i = 0; i < 5; i++) {
-        if (!markedSet.has(String(card[i][4 - i]))) {
+    for (
+        let i = 0;
+        i < 5;
+        i++
+    ) {
+
+        if (
+            !markedSet.has(
+                String(
+                    card[i][4 - i]
+                )
+            )
+        ) {
+
             diagonal2 = false;
+
             break;
+
         }
+
     }
 
     return diagonal2;
+
 }
 
 
@@ -261,81 +485,82 @@ function hasBingo(card, marked) {
 // =========================
 
 app.post("/api/claim", async (req, res) => {
-    const userId = String(req.body.user_id || "");
 
-    const player = game.players[userId];
+    const userId =
+        String(
+            req.body.user_id || ""
+        );
+
+    const player =
+        game.players[userId];
 
     if (!player) {
+
         return res.json({
+
             ok: false,
-            error: "Player not found"
+
+            error:
+                "Player not found"
+
         });
+
     }
 
     if (!game.running) {
+
         return res.json({
+
             ok: false,
-            error: "Game is not running"
+
+            error:
+                "Game is not running"
+
         });
+
     }
 
-    if (hasBingo(player.card, player.marked)) {
+    if (
+        hasBingo(
+            player.card,
+            player.marked
+        )
+    ) {
 
-        if (!game.winners.includes(userId)) {
+        if (
+            !game.winners.includes(userId)
+        ) {
+
             game.winners.push(userId);
+
         }
 
-        // STOP GAME
         game.running = false;
 
         console.log(
             `🏆 BINGO WINNER: ${player.name}`
         );
 
-        // Announce winner to everyone
         await announceWinner(
             player.name,
             game.players
         );
 
         return res.json({
+
             ok: true,
+
             winner: true,
-            name: player.name
+
+            name:
+                player.name
+
         });
+
     }
 
     res.json({
+
         ok: true,
-        winner: false,
-        message: "No Bingo yet"
-    });
-});
 
-
-// =========================
-// ADMIN START
-// =========================
-
-app.post("/api/admin/start", (req, res) => {
-    if (!isAdmin(req)) {
-        return res.status(403).json({
-            ok: false,
-            error: "Admin access required"
-        });
-    }
-
-    game.running = true;
-    game.called = [];
-    game.players = {};
-    game.winners = [];
-
-    res.json({
-        ok: true,
-        message: "Game started"
-    });
-});
-
-
-// =========================
-// ADMIN STOP
+        winner
