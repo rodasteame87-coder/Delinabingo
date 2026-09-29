@@ -4,18 +4,54 @@ const token = process.env.BOT_TOKEN;
 const appUrl = process.env.APP_URL;
 
 if (!token) {
-    console.error("BOT_TOKEN is missing");
+    console.error("❌ BOT_TOKEN is missing");
     process.exit(1);
 }
 
 if (!appUrl) {
-    console.error("APP_URL is missing");
+    console.error("❌ APP_URL is missing");
     process.exit(1);
 }
 
 const bot = new TelegramBot(token, {
-    polling: true
+    polling: {
+        autoStart: false,
+        params: {
+            timeout: 30
+        }
+    }
 });
+
+async function startBot() {
+
+    try {
+
+        // Remove any old webhook
+        await bot.deleteWebHook({
+            drop_pending_updates: true
+        });
+
+        console.log("✅ Old Telegram webhook removed");
+
+        // Start polling
+        await bot.startPolling();
+
+        console.log("🤖 Delina Bingo bot is running");
+
+    } catch (error) {
+
+        console.error(
+            "❌ Telegram bot startup error:",
+            error.message
+        );
+
+    }
+
+}
+
+// =========================
+// START COMMAND
+// =========================
 
 bot.onText(/\/start/, async (msg) => {
 
@@ -34,20 +70,67 @@ bot.onText(/\/start/, async (msg) => {
         ]
     };
 
-    await bot.sendMessage(
-        chatId,
-        "🎯 Welcome to Delina Bingo!\n\nTap the button below to enter the game.",
-        {
-            reply_markup: keyboard
-        }
-    );
+    try {
+
+        await bot.sendMessage(
+            chatId,
+            "🎯 Welcome to Delina Bingo!\n\nTap the button below to enter the game.",
+            {
+                reply_markup: keyboard
+            }
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Could not send message:",
+            error.message
+        );
+
+    }
+
 });
+
+// =========================
+// PING COMMAND
+// =========================
 
 bot.onText(/\/ping/, async (msg) => {
-    await bot.sendMessage(
-        msg.chat.id,
-        "🟢 Delina Bingo bot is working!"
-    );
+
+    try {
+
+        await bot.sendMessage(
+            msg.chat.id,
+            "🟢 Delina Bingo bot is working!"
+        );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Ping error:",
+            error.message
+        );
+
+    }
+
 });
 
-console.log("🤖 Delina Bingo Telegram bot is running");
+// =========================
+// BOT ERRORS
+// =========================
+
+bot.on("polling_error", (error) => {
+
+    console.error(
+        "⚠️ Telegram polling error:",
+        error.code,
+        error.message
+    );
+
+});
+
+// =========================
+// START
+// =========================
+
+startBot();
