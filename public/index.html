@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
 
 <meta name="viewport"
@@ -194,7 +193,6 @@ h1 {
 }
 
 </style>
-
 </head>
 
 <body>
@@ -250,4 +248,252 @@ h1 {
 
     <div
         class="called-list"
-        id="
+        id="calledList">
+    </div>
+
+</div>
+
+<div class="live" id="live">
+    🔴 Game is not running
+</div>
+
+<button
+    class="bingo-button"
+    id="bingoButton"
+    onclick="claimBingo()">
+
+    🏆 BINGO
+
+</button>
+
+<div id="message"></div>
+
+
+<script>
+
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+let myCard = [];
+let marked = new Set();
+
+
+// ===============================
+// CREATE BINGO CARD
+// ===============================
+
+function createCard() {
+
+    const card = [];
+
+    // B column
+    const B = randomNumbers(1, 15);
+
+    // I column
+    const I = randomNumbers(16, 30);
+
+    // N column
+    const N = randomNumbers(31, 45);
+
+    // G column
+    const G = randomNumbers(46, 60);
+
+    // O column
+    const O = randomNumbers(61, 75);
+
+    for (let row = 0; row < 5; row++) {
+
+        card.push([
+            B[row],
+            I[row],
+            N[row],
+            G[row],
+            O[row]
+        ]);
+
+    }
+
+    // FREE SPACE
+    card[2][2] = "FREE";
+
+    myCard = card;
+
+    renderCard();
+}
+
+
+// ===============================
+// RANDOM NUMBERS
+// ===============================
+
+function randomNumbers(min, max) {
+
+    const numbers = [];
+
+    for (let i = min; i <= max; i++) {
+        numbers.push(i);
+    }
+
+    numbers.sort(() => Math.random() - 0.5);
+
+    return numbers.slice(0, 5);
+}
+
+
+// ===============================
+// DISPLAY CARD
+// ===============================
+
+function renderCard() {
+
+    const cardElement = document.getElementById("card");
+
+    cardElement.innerHTML = "";
+
+    for (let row = 0; row < 5; row++) {
+
+        for (let col = 0; col < 5; col++) {
+
+            const value = myCard[row][col];
+
+            const cell = document.createElement("div");
+
+            cell.className = "cell";
+
+            cell.textContent = value;
+
+            if (value === "FREE") {
+
+                cell.classList.add("free");
+
+                marked.add("FREE");
+
+            }
+
+            if (marked.has(value)) {
+                cell.classList.add("marked");
+            }
+
+            cell.onclick = function() {
+
+                if (value === "FREE") {
+                    return;
+                }
+
+                if (marked.has(value)) {
+
+                    marked.delete(value);
+
+                    cell.classList.remove("marked");
+
+                } else {
+
+                    marked.add(value);
+
+                    cell.classList.add("marked");
+                }
+
+            };
+
+            cardElement.appendChild(cell);
+        }
+    }
+}
+
+
+// ===============================
+// LOAD GAME STATE
+// ===============================
+
+async function loadState() {
+
+    try {
+
+        const response =
+            await fetch("/api/state?t=" + Date.now());
+
+        const data =
+            await response.json();
+
+        console.log("GAME STATE:", data);
+
+
+        // Players
+        document.getElementById("players")
+            .textContent = data.players || 0;
+
+
+        // Game status
+        const status =
+            document.getElementById("status");
+
+        const live =
+            document.getElementById("live");
+
+
+        if (data.running) {
+
+            status.textContent =
+                "🟢 Game is LIVE";
+
+            status.className =
+                "status";
+
+            live.textContent =
+                "🟢 Game is running";
+
+        } else {
+
+            status.textContent =
+                "🔴 Game is STOPPED";
+
+            status.className =
+                "status game-over";
+
+            live.textContent =
+                "🔴 Game is not running";
+        }
+
+
+        // Called numbers
+        const called =
+            data.called || [];
+
+        updateCalledNumbers(called);
+
+
+        // Last number
+        if (called.length > 0) {
+
+            const last =
+                called[called.length - 1];
+
+            document.getElementById("lastNumber")
+                .textContent = getLetter(last) + "-" + last;
+
+        } else {
+
+            document.getElementById("lastNumber")
+                .textContent = "—";
+        }
+
+
+        // Highlight numbers on card
+        highlightCalledNumbers(called);
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+        document.getElementById("status")
+            .textContent =
+            "⚠️ Connection error";
+    }
+}
+
+
+// =================
